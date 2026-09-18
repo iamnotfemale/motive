@@ -14,6 +14,7 @@ import { EdgeLayer, anchorOf, layoutEdges, type Rect } from "./Edges";
 import { NODE_W, NodeView } from "./SemanticNode";
 import { SOURCE_W, SourceChip } from "./SourceChip";
 import { EDGE_CHOICES, KIND, choiceOf, kindOf } from "@/lib/labels";
+import { tidyLayout } from "@/lib/tidy";
 import { useDoc } from "@/lib/store";
 import { useUi } from "@/lib/ui";
 import type { EdgeType, ReasoningNode, Side } from "@/lib/types";
@@ -208,7 +209,7 @@ export function Canvas({
    * 아래 세 effect 는 요청 번호가 바뀔 때만 돈다.
    * doc·rects 를 의존성에 넣으면 카드를 끄는 내내 다시 실행돼 화면이 튄다.
    */
-  const handled = useRef({ center: 0, fit: 0, zoom: 0 });
+  const handled = useRef({ center: 0, fit: 0, zoom: 0, tidy: 0 });
 
   /* 확대·축소 단추 — 화면 가운데를 기준으로 부드럽게 */
   useEffect(() => {
@@ -283,6 +284,23 @@ export function Canvas({
       },
     });
   }, [ui.fit, animateView]);
+
+  /* ── 정리 — 관계 기준 격자로 다시 놓는다 (스펙 §12.2: 사용자가 눌렀을 때만) ── */
+  useEffect(() => {
+    const req = ui.tidy;
+    if (!req || handled.current.tidy === req) return;
+    handled.current.tidy = req;
+    const d = docRef.current;
+    if (!d) return;
+
+    const spots = tidyLayout(d.nodes, d.edges, d.sources, rectsRef.current);
+    const ids = Object.keys(spots);
+    if (!ids.length) return;
+
+    store().pushHistory(pid);
+    for (const id of ids) store().moveNode(pid, id, { ...d.placements[id], ...spots[id] });
+    useUi.getState().requestFit();
+  }, [ui.tidy, pid, store]);
 
   /* ── 포인터 드래그 ── */
   function startDrag(kind: Exclude<DragKind, null>, e: React.PointerEvent, id?: string) {
@@ -495,10 +513,12 @@ export function Canvas({
   const connecting = ui.connecting;
   const selectedEdge = ui.selEdge ? doc.edges.find((e) => e.id === ui.selEdge) : null;
   const selectedNodes = ui.sel.filter((id) => nodeMap.has(id));
+  // 자료 아이콘도 함께 고른다. 지우기·복제·접기는 묶음 전체에 걸린다.
+  const selectedAll = ui.sel.filter((id) => rects[id]);
 
   // 선택 묶음의 화면 좌표 — 위에 붙는 도구 막대 자리
-  const selBox = selectedNodes.length
-    ? selectedNodes.reduce(
+  const selBox = selectedAll.length
+    ? selectedAll.reduce(
         (acc, id) => {
           const r = rects[id];
           if (!r) return acc;
@@ -686,7 +706,7 @@ export function Canvas({
                 source={s}
                 x={p.x}
                 y={p.y}
-                selected={ui.sel.length === 1 && ui.sel[0] === s.id}
+                selected={ui.sel.includes(s.id)}
                 hovered={ui.hover === s.id}
                 dragging={ui.dragging && drag.current?.id === s.id}
                 dimmed={Boolean(focus)}
@@ -747,10 +767,11 @@ export function Canvas({
       {/* 선택한 카드 위에 붙는 도구 막대 */}
       {selBox && !connecting && !drag.current?.moved && (
         <SelectionToolbar
-          count={selectedNodes.length}
+          count={selectedAll.length}
+          single={selectedAll.length === 1 && selectedNodes.length === 1}
           x={ui.pan.x + ((selBox.x0 + selBox.x1) / 2) * ui.zoom}
           y={ui.pan.y + selBox.y0 * ui.zoom}
-          collapsed={selectedNodes.every((id) => doc.placements[id]?.collapsed)}
+          collapsed={selectedNodes.length > 0 && selectedNodes.every((id) => doc.placements[id]?.collapsed)}
           onOpen={() => onOpenNode(selectedNodes[0])}
           onFocus={() => useUi.getState().setFocusView(selectedNodes[0])}
           onCollapse={() => {

@@ -10,6 +10,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 
 interface Props {
   count: number;
+  /** 카드 하나만 골랐을 때. 문서로 보기는 그때만 뜬다. */
+  single: boolean;
   x: number;
   y: number;
   collapsed: boolean;
@@ -23,8 +25,8 @@ interface Props {
 
 export function SelectionToolbar(p: Props) {
   const items = [
-    { icon: FileText, label: "문서로 보기", go: p.onOpen, danger: false },
-    { icon: Target, label: "주변만 보기", go: p.onFocus, danger: false },
+    ...(p.single ? [{ icon: FileText, label: "문서로 보기", go: p.onOpen, danger: false }] : []),
+    ...(p.single ? [{ icon: Target, label: "주변만 보기", go: p.onFocus, danger: false }] : []),
     {
       icon: p.collapsed ? ChevronsUpDown : ChevronsDownUp,
       label: p.collapsed ? "펼치기" : "접기",
@@ -33,7 +35,7 @@ export function SelectionToolbar(p: Props) {
     },
     { icon: Sparkles, label: "AI에게 묻기", go: p.onAi, danger: false },
     ...(p.count > 1
-      ? [{ icon: GitFork, label: "이 블록들로 새 그래프", go: p.onFork, danger: false }]
+      ? [{ icon: GitFork, label: "복제해 새 갈래 만들기", go: p.onFork, danger: false }]
       : []),
     { icon: Trash2, label: "지우기", go: p.onDelete, danger: true },
   ];

@@ -148,23 +148,29 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
     const d = useDoc.getState().docs[pid];
     const sel = useUi.getState().sel;
     const nodes = sel.filter((id) => d?.nodes.some((n) => n.id === id));
-    if (!nodes.length) return;
+    const sources = sel.filter((id) => d?.sources.some((s) => s.id === id));
+    if (!nodes.length && !sources.length) return;
     for (const id of nodes) store().deleteNode(pid, id);
+    for (const id of sources) store().deleteSource(pid, id);
     useUi.getState().select([]);
     useUi.getState().closePanel();
     flashSaved();
-    toast(`${nodes.length}개 블록을 지웠어요`, { description: "⌘Z 로 되돌릴 수 있어요" });
+    toast(`${nodes.length + sources.length}개를 지웠어요`, { description: "⌘Z 로 되돌릴 수 있어요" });
   }, [pid, store]);
 
+  /** 고른 블록을 같은 캔버스 옆자리에 복제한다. 원본은 그대로 둔다. */
   const forkSelection = useCallback(() => {
     const sel = useUi.getState().sel;
     if (sel.length < 2) return;
-    const name = (project?.name ?? "프로젝트") + " — 갈래";
-    const npid = store().createProjectFrom(pid, sel, name);
-    if (!npid) return toast("새 그래프를 만들지 못했어요.");
-    toast("고른 블록으로 새 그래프를 만들었어요", { description: "원본은 그대로 남아 있어요" });
-    router.push(`/p/${npid}`);
-  }, [pid, store, project, router]);
+    const made = store().duplicateNodes(pid, sel);
+    if (!made.length) return toast("복제하지 못했어요.");
+    useUi.getState().select(made);
+    useUi.getState().requestFit();
+    flashSaved();
+    toast(`${made.length}개를 복제해 새 갈래를 만들었어요`, {
+      description: "원본은 그대로 남아 있어요 · ⌘Z 로 되돌릴 수 있어요",
+    });
+  }, [pid, store]);
 
   /* ── 단계별 행동 ── */
   const runAction = useCallback(
@@ -439,7 +445,7 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
           onRedo={() => {
             if (!store().redoStep(pid)) toast("다시 실행할 변경이 없어요");
           }}
-          onTidy={() => toast("정리는 다음 단계예요. 지금은 배치를 건드리지 않아요.")}
+          onTidy={() => useUi.getState().requestTidy()}
           onZoom={(z) => useUi.getState().requestZoom(z)}
           hasSelection={ui.sel.length > 0}
           onFit={() => useUi.getState().requestFit()}

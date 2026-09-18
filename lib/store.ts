@@ -57,8 +57,11 @@ interface DocState {
 
   createProject: (problemStatement: string, name?: string) => string;
   createDemoProject: () => string;
-  /** 고른 카드들만 떼어 새 프로젝트로. 그 사이의 관계와 자료도 같이 간다. */
-  createProjectFrom: (pid: string, ids: string[], name: string) => string | null;
+  /**
+   * 고른 카드들을 같은 캔버스 옆자리에 복제한다.
+   * 원본과 고르지 않은 카드는 그대로 두고, 고른 것들 사이의 관계만 복제본에도 잇는다.
+   */
+  duplicateNodes: (pid: string, ids: string[]) => string[];
   deleteProject: (pid: string) => void;
   renameProject: (pid: string, name: string) => void;
 
@@ -76,6 +79,8 @@ interface DocState {
   removeEdge: (pid: string, id: string) => void;
 
   addSource: (pid: string, s: Source) => void;
+  /** 자료를 지운다. 그 자료에서 뽑은 근거는 남고, 출처가 없다고 표시된다 (스펙 §5.5). */
+  deleteSource: (pid: string, id: string) => void;
   patchSource: (pid: string, id: string, patch: Partial<Source>) => void;
 
   setCandidates: (pid: string, c: EvidenceCandidate[]) => void;
@@ -196,50 +201,87 @@ export const useDoc = create<DocState>()(
           return pid;
         },
 
-        createProjectFrom: (from, ids, name) => {
-          const src = get().docs[from];
-          if (!src || !ids.length) return null;
-          const keep = new Set(ids);
-          const nodes = src.nodes.filter((n) => keep.has(n.id));
-          if (!nodes.length) return null;
+        duplicateNodes: (pid, ids) => {
+          const doc = get().docs[pid];
+          if (!doc || !ids.length) return [];
 
-          const sourceIds = new Set(nodes.map((n) => n.sourceId).filter(Boolean) as string[]);
-          for (const id of ids) if (src.sources.some((s) => s.id === id)) sourceIds.add(id);
+          const picked = new Set(ids);
+          const nodes = doc.nodes.filter((n) => picked.has(n.id));
+          const sources = doc.sources.filter((s) => picked.has(s.id));
+          if (!nodes.length && !sources.length) return [];
 
-          // 왼쪽 위로 당겨 붙인다. 원본 배치의 상대 위치는 유지한다.
-          const spots = ids.map((id) => src.placements[id]).filter(Boolean);
-          const ox = Math.min(...spots.map((p) => p.x)) - 72;
-          const oy = Math.min(...spots.map((p) => p.y)) - 48;
+          // 복제본을 원본 오른쪽 빈 곳에 통째로 옮겨 놓는다.
+          const spots = [...nodes, ...sources].map((x) => doc.placements[x.id]).filter(Boolean);
+          const right = Math.max(...Object.values(doc.placements).map((p) => p.x + 288));
+          const minX = Math.min(...spots.map((p) => p.x));
+          const minY = Math.min(...spots.map((p) => p.y));
+          const dx = right + 120 - minX;
+          const dy = 0;
 
-          const pid = "prj-" + Math.random().toString(36).slice(2, 9);
-          const at = now();
-          const doc = emptyDoc();
-          doc.nodes = nodes;
-          doc.edges = src.edges.filter((e) => keep.has(e.from) && keep.has(e.to));
-          doc.sources = src.sources.filter((s) => sourceIds.has(s.id));
-          doc.placements = Object.fromEntries(
-            [...ids, ...doc.sources.map((s) => s.id)]
-              .map((id) => [id, src.placements[id]])
-              .filter(([, p]) => Boolean(p))
-              .map(([id, p]) => [id as string, { ...(p as Placement), x: (p as Placement).x - ox, y: (p as Placement).y - oy }]),
-          );
+          get().pushHistory(pid);
+          suppressHistory = true;
 
-          const anchor = nodes.find((n) => n.type === "problem");
-          set((s) => ({
-            projects: [
-              {
-                id: pid,
-                name,
-                problemStatement: anchor ? titleOf(anchor.md) : name,
-                demo: get().projects.find((p) => p.id === from)?.demo,
-                createdAt: at,
-                updatedAt: at,
-              },
-              ...s.projects,
-            ],
-            docs: { ...s.docs, [pid]: doc },
+          const ts = now();
+          const idMap: Record<string, string> = {};
+          const counters: Record<string, number> = {};
+          const nextFree = (kind: Kind) => {
+            const prefix = KIND[kind].prefix;
+            const used = get()
+              .docs[pid]!.nodes.filter((n) => n.id.startsWith(prefix + "-"))
+              .map((n) => parseInt(n.id.slice(prefix.length + 1), 10))
+              .filter((n) => !Number.isNaN(n));
+            const base = used.length ? Math.max(...used) : 0;
+            counters[prefix] = (counters[prefix] ?? 0) + 1;
+            return prefix + "-" + String(base + counters[prefix]).padStart(2, "0");
+          };
+
+          const newNodes = nodes.map((n) => {
+            const id = nextFree(kindFromId(n.id));
+            idMap[n.id] = id;
+            return { ...n, id, createdAt: ts, updatedAt: ts };
+          });
+
+          const newSources: Source[] = sources.map((s) => {
+            const id = "src-" + Math.random().toString(36).slice(2, 9);
+            idMap[s.id] = id;
+            const copy: Source = { ...s, id, createdAt: ts };
+            delete copy.attachedTo;
+            return copy;
+          });
+
+          // 붙어 있던 자료는 복제본 카드에 다시 붙인다
+          for (const s of newSources) {
+            const origin = sources.find((x) => idMap[x.id] === s.id);
+            if (origin?.attachedTo && idMap[origin.attachedTo]) s.attachedTo = idMap[origin.attachedTo];
+          }
+          for (const n of newNodes) {
+            if (n.sourceId && idMap[n.sourceId]) n.sourceId = idMap[n.sourceId];
+          }
+
+          const newEdges = doc.edges
+            .filter((e) => idMap[e.from] && idMap[e.to])
+            .map((e) => ({
+              ...e,
+              id: idMap[e.from] + ">" + idMap[e.to] + ":" + e.type,
+              from: idMap[e.from],
+              to: idMap[e.to],
+            }));
+
+          const placements: Record<string, Placement> = {};
+          for (const [oldId, newId] of Object.entries(idMap)) {
+            const at = doc.placements[oldId];
+            if (at) placements[newId] = { ...at, x: at.x + dx, y: at.y + dy };
+          }
+
+          edit(pid, (d) => ({
+            nodes: [...d.nodes, ...newNodes],
+            sources: [...d.sources, ...newSources],
+            edges: [...d.edges, ...newEdges],
+            placements: { ...d.placements, ...placements },
           }));
-          return pid;
+
+          suppressHistory = false;
+          return Object.values(idMap);
         },
 
         deleteProject: (pid) =>
@@ -315,6 +357,19 @@ export const useDoc = create<DocState>()(
         },
 
         addSource: (pid, s) => edit(pid, (d) => ({ sources: [...d.sources, s] })),
+
+        deleteSource: (pid, id) => {
+          get().pushHistory(pid);
+          edit(pid, (d) => {
+            const placements = { ...d.placements };
+            delete placements[id];
+            return {
+              sources: d.sources.filter((s) => s.id !== id),
+              candidates: d.candidates.filter((c) => c.sourceId !== id),
+              placements,
+            };
+          });
+        },
 
         patchSource: (pid, id, patch) =>
           edit(pid, (d) => ({ sources: d.sources.map((x) => (x.id === id ? { ...x, ...patch } : x)) })),

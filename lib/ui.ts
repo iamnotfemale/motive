@@ -96,6 +96,8 @@ interface UiState {
   fit: number | null;
   /** 확대·축소 요청. 부드럽게 옮기기 위해 Canvas 가 받아서 처리한다. */
   zoomTo: { z: number; nonce: number } | null;
+  /** 관계 기준 격자 재배치 요청. */
+  tidy: number | null;
 
   select: (ids: string[]) => void;
   toggleSelect: (id: string) => void;
@@ -127,6 +129,7 @@ interface UiState {
   requestCenter: (id: string) => void;
   requestFit: () => void;
   requestZoom: (z: number) => void;
+  requestTidy: () => void;
   /** Esc — 메뉴 → 관계 → 패널 → 선택 순서로 하나씩 푼다. */
   escape: () => void;
   reset: () => void;
@@ -160,6 +163,7 @@ const initial = {
   center: null as { id: string; nonce: number } | null,
   fit: null as number | null,
   zoomTo: null as { z: number; nonce: number } | null,
+  tidy: null as number | null,
 };
 
 export const useUi = create<UiState>()((set, get) => ({
@@ -199,6 +203,7 @@ export const useUi = create<UiState>()((set, get) => ({
   requestCenter: (id) => set({ center: { id, nonce: Date.now() } }),
   requestFit: () => set({ fit: Date.now() }),
   requestZoom: (z) => set({ zoomTo: { z, nonce: Date.now() } }),
+  requestTidy: () => set({ tidy: Date.now() }),
 
   escape: () => {
     const s = get();
