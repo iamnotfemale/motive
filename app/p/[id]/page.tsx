@@ -16,6 +16,7 @@ import { Toolbar } from "@/components/Toolbar";
 import { LeftPanelView, LeftRail } from "@/components/LeftSide";
 import { WorkspaceHeader } from "@/components/WorkspaceHeader";
 import { Inspector } from "@/components/panels/Inspector";
+import { SourcePanel } from "@/components/panels/SourcePanel";
 import { ReviewPanel } from "@/components/panels/ReviewPanel";
 import { DecisionPanel } from "@/components/panels/DecisionPanel";
 import { ColdStartPanel } from "@/components/panels/ColdStartPanel";
@@ -442,10 +443,17 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
           }}
           onSourceClick={(sourceId, targetId) => {
             const s = doc.sources.find((x) => x.id === sourceId);
+            // 그냥 누르면 자료를 보여주고, 카드 위에 놓았으면 그 카드에 붙일 근거를 찾는다.
+            if (!targetId) {
+              useUi.getState().select([sourceId]);
+              useUi.getState().openPanel("source");
+              return;
+            }
+            if (s && s.state === "read") store().patchSource(pid, sourceId, { attachedTo: targetId });
             useUi.getState().setReview({
               sourceId,
-              step: s?.state === "read" ? (targetId ? "consent" : "pick-target") : "reading",
-              targetId: targetId ?? null,
+              step: s?.state === "read" ? "consent" : "reading",
+              targetId,
               pickedLine: null,
               backTo: "candidates",
             });
@@ -491,6 +499,7 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
 
         <AnimatePresence mode="wait">
           {ui.panel === "inspector" && <Inspector key="inspector" pid={pid} />}
+          {ui.panel === "source" && <SourcePanel key="source" pid={pid} />}
           {ui.panel === "review" && <ReviewPanel key="review" pid={pid} />}
           {ui.panel === "decision" && <DecisionPanel key="decision" pid={pid} />}
           {ui.panel === "coldstart" && <ColdStartPanel key="coldstart" pid={pid} />}

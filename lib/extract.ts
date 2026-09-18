@@ -10,15 +10,21 @@ import type { SourceKind } from "./types";
 export interface Extracted {
   text: string;
   kind: SourceKind;
+  /** 그림이면 미리보기 data URL. */
+  preview?: string;
   /** 텍스트를 찾지 못한 이유. 화면 문구로 그대로 쓴다. */
   problem?: string;
 }
+
+/** 그림을 data URL 로 담는 한도. localStorage 를 쓰므로 크게 잡지 않는다. */
+const MAX_PREVIEW_BYTES = 1_200_000;
 
 const TEXT_EXT = /\.(md|markdown|txt|text|csv|json|log)$/i;
 
 export function kindOfFile(file: File): SourceKind {
   if (/\.pdf$/i.test(file.name) || file.type === "application/pdf") return "pdf";
   if (/\.(md|markdown)$/i.test(file.name)) return "markdown";
+  if (file.type.startsWith("image/") || /\.(png|jpe?g|gif|webp|svg|avif)$/i.test(file.name)) return "image";
   return "text";
 }
 
@@ -26,6 +32,23 @@ export async function extractFile(file: File): Promise<Extracted> {
   const kind = kindOfFile(file);
 
   if (kind === "pdf") return extractPdf(file);
+
+  if (kind === "image") {
+    if (file.size > MAX_PREVIEW_BYTES)
+      return {
+        text: "",
+        kind,
+        problem: "그림이 너무 커서 미리보기를 담지 못했어요. 파일은 목록에 남아 있어요.",
+      };
+    const preview = await new Promise<string>((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onload = () => resolve(String(fr.result));
+      fr.onerror = () => reject(fr.error);
+      fr.readAsDataURL(file);
+    }).catch(() => "");
+    // 그림에서는 인용할 줄이 나오지 않는다. 미리보기만 남기고 근거는 직접 쓰게 한다.
+    return { text: "", kind, preview, problem: preview ? undefined : "그림을 읽지 못했어요." };
+  }
 
   if (TEXT_EXT.test(file.name) || file.type.startsWith("text/") || file.type === "") {
     const text = await file.text();

@@ -8,19 +8,20 @@
  */
 import { memo, useEffect, useRef } from "react";
 import { motion } from "motion/react";
-import { FileText, FileType2, Link2, MessageSquareQuote } from "lucide-react";
+import { FileText, FileType2, ImageIcon, Link2, MessageSquareQuote } from "lucide-react";
 import { Dot } from "@/components/kit";
 import type { Source, SourceState } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export const SOURCE_W = 208;
 
-const ICON = {
+const ICON: Record<string, typeof FileText> = {
   markdown: FileText,
   text: FileText,
   pdf: FileType2,
   url: Link2,
   interview: MessageSquareQuote,
+  image: ImageIcon,
 };
 
 const STATE: Record<SourceState, { ko: string; tone: "ok" | "warn" | "muted" | "danger" }> = {
@@ -48,7 +49,7 @@ interface Props {
 
 export const SourceChip = memo(function SourceChip(p: Props) {
   const { source } = p;
-  const Icon = ICON[source.kind];
+  const Icon = ICON[source.kind] ?? FileText;
   const state = STATE[source.state];
   const ref = useRef<HTMLDivElement>(null);
 

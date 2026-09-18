@@ -45,6 +45,12 @@ const evidenceOut = z.object({
     .max(5),
 });
 
+const summary = z.object({
+  summary: z.string().describe("자료가 무엇을 담고 있는지 3~5문장"),
+  points: z.array(z.string()).max(5).describe("이 프로젝트와 맞닿을 수 있는 대목"),
+  caveat: z.string().describe("이 요약만 보고 판단하면 안 되는 이유 한 줄"),
+});
+
 const refine = z.object({
   statement: z.string().describe("대상·상황·불편이 한 문장에 드러나게 정리한 문제 진술"),
   note: z.string().describe("무엇을 바꿨는지 한 줄"),
@@ -121,6 +127,30 @@ ${targets.map((t) => `${t.id} (${t.kind}) ${t.title}`).join("\n") || "(없음)"}
 
 원문:
 ${numbered}`,
+      });
+      return Response.json(object);
+    }
+
+    if (body.kind === "summarize") {
+      const text = String(body.text ?? "").slice(0, 24000);
+      const name = String(body.name ?? "자료");
+      if (!text.trim()) return Response.json({ error: "요약할 원문이 없어요." }, { status: 400 });
+
+      const { object } = await generateObject({
+        model: MODEL,
+        schema: summary,
+        system: GUARD,
+        prompt: `아래 자료를 읽고 무엇이 들어 있는지 알려줘라.
+
+규칙:
+- 자료에 없는 내용을 채우지 마라.
+- 이 요약은 원문을 대신하지 않는다. 근거로 쓰려면 원문에서 인용해야 한다는 점을 caveat 에 써라.
+- points 는 자료에 실제로 있는 대목만.
+
+자료 이름: ${name}
+
+원문:
+${text}`,
       });
       return Response.json(object);
     }

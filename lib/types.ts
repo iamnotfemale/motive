@@ -87,7 +87,7 @@ export interface SemanticEdge {
   proposed?: boolean;
 }
 
-export type SourceKind = "markdown" | "text" | "pdf" | "url" | "interview";
+export type SourceKind = "markdown" | "text" | "pdf" | "url" | "interview" | "image";
 export type SourceState = "reading" | "read" | "attached" | "no-text" | "failed";
 
 export interface Source {
@@ -102,6 +102,10 @@ export interface Source {
   tag?: string;
   /** 어느 카드에 떨어뜨린 자료인지. 그 카드 아래에 목록으로 붙는다. */
   attachedTo?: string;
+  /** 그림 미리보기 (data URL). 용량이 크면 담지 않는다. */
+  preview?: string;
+  /** 바로 읽기 어려운 자료에 대해 AI 가 쓴 요약. 원문을 대체하지 않는다. */
+  summary?: string;
   createdAt: string;
 }
 

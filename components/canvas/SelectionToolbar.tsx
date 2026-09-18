@@ -50,10 +50,14 @@ export function SelectionToolbar(p: Props) {
       className="absolute z-20 flex -translate-x-1/2 -translate-y-full items-center gap-0.5 rounded-[10px] border border-line bg-surface p-1 shadow-[0_6px_20px_rgba(24,24,27,.12)]"
       onPointerDown={(e) => e.stopPropagation()}
     >
-      <span className="px-2 text-[14px] whitespace-nowrap text-muted">
-        <span className="font-medium text-brand">{p.count}개</span> 선택
-      </span>
-      <span className="mx-0.5 h-5 w-px bg-line" />
+      {p.count > 1 && (
+        <>
+          <span className="px-2 text-[14px] whitespace-nowrap text-muted">
+            <span className="font-medium text-brand">{p.count}개</span> 선택
+          </span>
+          <span className="mx-0.5 h-5 w-px bg-line" />
+        </>
+      )}
       {items.map(({ icon: I, label, go, danger }) => (
         <Tooltip key={label}>
           <TooltipTrigger asChild>

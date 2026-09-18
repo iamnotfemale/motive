@@ -7,7 +7,7 @@
 import { create } from "zustand";
 import type { Phase, SaveState, Side } from "./types";
 
-export type Panel = "inspector" | "review" | "decision" | "refine" | "coldstart" | null;
+export type Panel = "inspector" | "source" | "review" | "decision" | "refine" | "coldstart" | null;
 
 /** 왼쪽에서 밀려나오는 패널. 아래에서 올라오는 서랍을 대신한다. */
 export type LeftPanel = "sources" | "search" | null;

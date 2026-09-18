@@ -36,6 +36,16 @@ export interface ColdStart {
 
 export const coldStart = (problem: string) => call<ColdStart>({ kind: "cold-start", problem });
 
+export interface SourceSummary {
+  summary: string;
+  points: string[];
+  caveat: string;
+}
+
+/** 바로 읽기 어려운 자료를 훑어본다. 원문을 대신하지 않는다 — 근거는 여전히 인용에서 나온다. */
+export const summarizeSource = (name: string, text: string) =>
+  call<SourceSummary>({ kind: "summarize", name, text });
+
 export const refineProblem = (problem: string) =>
   call<{ statement: string; note: string }>({ kind: "refine", problem });
 

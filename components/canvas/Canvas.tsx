@@ -50,6 +50,20 @@ function EdgeDot({ tone }: { tone: "muted" | "ok" | "danger" }) {
   );
 }
 
+/**
+ * 포인터 아래의 카드. 끌고 있는 자기 자신은 건너뛴다 —
+ * 드래그 중인 아이콘이 포인터를 따라다니며 판정을 가로채기 때문이다.
+ */
+function nodeUnder(x: number, y: number, skipId?: string): string | null {
+  for (const el of document.elementsFromPoint(x, y)) {
+    const chip = el.closest("[data-source-id]");
+    if (chip && chip.getAttribute("data-source-id") === skipId) continue;
+    const card = el.closest("[data-node-id]");
+    if (card) return card.getAttribute("data-node-id");
+  }
+  return null;
+}
+
 /** 포인터에서 가장 가까운 변. 놓는 순간 그 변에 꽂힌다. */
 function nearestSide(r: Rect, x: number, y: number): Side {
   const d: [Side, number][] = [
@@ -355,8 +369,7 @@ export function Canvas({
       const conn = useUi.getState().connecting;
       if (conn) {
         const at = toCanvas(e.clientX, e.clientY);
-        const el = document.elementFromPoint(e.clientX, e.clientY);
-        const over = el?.closest("[data-node-id]")?.getAttribute("data-node-id") ?? null;
+        const over = nodeUnder(e.clientX, e.clientY);
         const valid = over && over !== conn.from ? over : null;
         const r = valid ? rectsRef.current[valid] : null;
         useUi.getState().setConnecting({
@@ -397,8 +410,8 @@ export function Canvas({
 
       if (d.kind === "source") {
         useUi.getState().setDragging(true);
-        const el = document.elementFromPoint(e.clientX, e.clientY);
-        useUi.getState().setDropTarget(el?.closest("[data-node-id]")?.getAttribute("data-node-id") ?? null);
+        // 끌고 있는 아이콘이 포인터 밑에 있어 판정을 가로챈다. 잠시 빼고 그 아래를 본다.
+        useUi.getState().setDropTarget(nodeUnder(e.clientX, e.clientY, d.id));
       }
     }
 
@@ -578,7 +591,7 @@ export function Canvas({
         // 빈 곳에서 끌면 범위 선택. 가운데 버튼이나 Space 없이도 손 도구로 이동할 수 있다.
         useUi.getState().select([]);
         useUi.getState().selectEdge(null);
-        if (ui.panel === "refine") useUi.getState().closePanel();
+        if (ui.panel === "refine" || ui.panel === "source") useUi.getState().closePanel();
         startDrag("marquee", e);
       }}
       className={cn(
@@ -659,7 +672,7 @@ export function Canvas({
                 source={doc.sources.find((s) => s.id === n.sourceId)}
                 attached={attachedBy.get(n.id) ?? EMPTY_SOURCES}
                 onOpenSource={(sid) => onSourceClick(sid, n.id)}
-                showActions={(ui.hover === n.id || selected) && ui.sel.length <= 1 && !connecting}
+                showActions={selected && !connecting}
                 onMeasure={onMeasure}
                 onPointerDown={(e) => {
                   if (hand || e.button !== 0) return;
