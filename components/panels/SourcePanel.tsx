@@ -17,7 +17,6 @@ import { linesOf } from "@/lib/extract";
 import { nodeTitle, useDoc } from "@/lib/store";
 import { flashSaved, useUi } from "@/lib/ui";
 import type { SourceState } from "@/lib/types";
-import { cn } from "@/lib/utils";
 
 const STATE: Record<SourceState, { ko: string; tone: "ok" | "warn" | "muted" | "danger" }> = {
   reading: { ko: "읽는 중", tone: "muted" },
@@ -200,27 +199,6 @@ export function SourcePanel({ pid }: { pid: string }) {
         )}
       </div>
 
-      <div className="flex items-center gap-2 border-t border-line px-5 py-3">
-        <span className={cn("flex-1 text-[13px]", usable ? "text-muted" : "text-warn")}>
-          {usable ? "자료는 아직 근거가 아니에요" : "원문이 있어야 근거를 만들 수 있어요"}
-        </span>
-        <Btn
-          variant="ink"
-          disabled={!usable}
-          onClick={() => {
-            useUi.getState().setReview({
-              sourceId: source.id,
-              step: "pick-target",
-              targetId: null,
-              pickedLine: null,
-              backTo: "candidates",
-            });
-            useUi.getState().openPanel("review");
-          }}
-        >
-          근거 만들기
-        </Btn>
-      </div>
     </SidePanel>
   );
 }

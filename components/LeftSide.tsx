@@ -192,14 +192,8 @@ function SourcesPanel({ pid, onFiles }: { pid: string; onFiles: (f: File[]) => v
       toast.warning(out.problem, { description: "자료함에는 남겨뒀어요." });
       return;
     }
-    useUi.getState().setReview({
-      sourceId: sid,
-      step: "pick-target",
-      targetId: null,
-      pickedLine: null,
-      backTo: "candidates",
-    });
-    useUi.getState().openPanel("review");
+    useUi.getState().select([sid]);
+    useUi.getState().openPanel("source");
   }
 
   if (!doc) return null;

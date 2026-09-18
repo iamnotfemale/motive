@@ -162,15 +162,10 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
           description: "읽은 자료는 그대로 쓸 수 있어요.",
         });
 
+      // 올리면 자료 패널만 연다. 근거 만들기는 도구 막대의 `근거 찾기`에서.
       if (firstId && files.length === 1 && !failed) {
-        useUi.getState().setReview({
-          sourceId: firstId,
-          step: targetId ? "consent" : "pick-target",
-          targetId: targetId ?? null,
-          pickedLine: null,
-          backTo: "candidates",
-        });
-        useUi.getState().openPanel("review");
+        useUi.getState().select([firstId]);
+        useUi.getState().openPanel("source");
       }
     },
     [pid, store],
@@ -467,22 +462,10 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
             else useUi.getState().openLeft("sources");
           }}
           onSourceClick={(sourceId, targetId) => {
-            const s = doc.sources.find((x) => x.id === sourceId);
-            // 그냥 누르면 자료를 보여주고, 카드 위에 놓았으면 그 카드에 붙일 근거를 찾는다.
-            if (!targetId) {
-              useUi.getState().select([sourceId]);
-              useUi.getState().openPanel("source");
-              return;
-            }
-            if (s && s.state === "read") store().patchSource(pid, sourceId, { attachedTo: targetId });
-            useUi.getState().setReview({
-              sourceId,
-              step: s?.state === "read" ? "consent" : "reading",
-              targetId,
-              pickedLine: null,
-              backTo: "candidates",
-            });
-            useUi.getState().openPanel("review");
+            // 카드 위에 놓으면 그 카드에 붙인다. 어느 경우든 자료 패널(제목·미리보기·요약)만 연다.
+            if (targetId) store().patchSource(pid, sourceId, { attachedTo: targetId });
+            useUi.getState().select([sourceId]);
+            useUi.getState().openPanel("source");
           }}
           onFilesDropped={(files, at, target) => void addFiles(files, at, target)}
           onPlaceBlock={(at) => {
