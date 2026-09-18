@@ -139,6 +139,8 @@ export interface Project {
   name: string;
   problemStatement: string;
   demo?: boolean;
+  /** 휴지통에 들어간 시각. 있으면 목록에서 숨기고, 30일 뒤 영구 삭제된다. */
+  deletedAt?: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -7,7 +7,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { FileText, Folder, LayoutGrid, List, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Search, Settings, Plus } from "lucide-react";
+import { FileText, Folder, LayoutGrid, List, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Search, Settings, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Btn } from "@/components/kit";
 import { SceneFrame, REL, type Rel, type SceneNode, type SceneSpec } from "@/components/landing/Scene";
@@ -23,7 +23,7 @@ import { useDoc, type Doc } from "@/lib/store";
 import type { Project } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-type View = "ideas" | "files" | "settings";
+type View = "ideas" | "files" | "trash" | "settings";
 
 const ago = (iso: string) => {
   const m = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
@@ -86,10 +86,14 @@ export default function Dashboard() {
 function DashboardInner() {
   const router = useRouter();
   const params = useSearchParams();
-  const projects = useDoc((s) => s.projects);
+  const allProjects = useDoc((s) => s.projects);
+  const projects = useMemo(() => allProjects.filter((p) => !p.deletedAt), [allProjects]);
+  const trashed = useMemo(() => allProjects.filter((p) => p.deletedAt), [allProjects]);
   const docs = useDoc((s) => s.docs);
   const createProject = useDoc((s) => s.createProject);
   const createDemoProject = useDoc((s) => s.createDemoProject);
+  const trashProject = useDoc((s) => s.trashProject);
+  const restoreProject = useDoc((s) => s.restoreProject);
   const deleteProject = useDoc((s) => s.deleteProject);
   const renameProject = useDoc((s) => s.renameProject);
 
@@ -99,6 +103,9 @@ function DashboardInner() {
     if (useDoc.persist.hasHydrated()) setHydrated(true);
     return unsub;
   }, []);
+  useEffect(() => {
+    if (hydrated) useDoc.getState().purgeTrash();
+  }, [hydrated]);
 
   // 소개 페이지의 "데모 프로젝트 열기" → /dashboard?demo=1
   useEffect(() => {
@@ -140,9 +147,8 @@ function DashboardInner() {
   }
 
   function remove(p: Project) {
-    if (!confirm(`"${p.name}" 캔버스를 지울까요? 되돌릴 수 없어요.`)) return;
-    deleteProject(p.id);
-    toast("캔버스를 지웠어요");
+    trashProject(p.id);
+    toast("휴지통으로 옮겼어요", { action: { label: "되돌리기", onClick: () => restoreProject(p.id) } });
   }
 
   function rename(p: Project) {
@@ -223,6 +229,15 @@ function DashboardInner() {
           </>
         )}
         <span className="flex-1" />
+        <button type="button" onClick={() => setView("trash")} className={cn(navBtn(view === "trash"), view !== "trash" && "text-muted")} title="휴지통">
+          <Trash2 className="size-4 shrink-0" />
+          {open && (
+            <>
+              <span className="flex-1">휴지통</span>
+              {trashed.length > 0 && <span className="text-[12px] text-faint">{trashed.length}</span>}
+            </>
+          )}
+        </button>
         <button type="button" onClick={() => setView("settings")} className={cn(navBtn(view === "settings"), view !== "settings" && "text-muted")} title="설정">
           <Settings className="size-4 shrink-0" />
           {open && <span>설정</span>}
@@ -232,7 +247,7 @@ function DashboardInner() {
       {/* Main */}
       <main className="flex min-w-0 flex-1 flex-col">
         <div className="sticky top-0 z-[5] flex h-13 items-center gap-2 border-b border-line bg-surface px-6">
-          <span className="font-semibold tracking-[-0.01em]">{{ ideas: "아이디어", files: "파일", settings: "설정" }[view]}</span>
+          <span className="font-semibold tracking-[-0.01em]">{{ ideas: "아이디어", files: "파일", trash: "휴지통", settings: "설정" }[view]}</span>
           <span className="flex-1" />
           <span className="inline-flex items-center gap-1.5 text-[13px] text-[#3f3f46]"><span className="size-1.5 rounded-full bg-[#3f3f46]" />이 브라우저에 저장됨</span>
           <Link href="/" className="h-7 rounded-[6px] px-2.5 text-[13px] leading-7 text-muted hover:bg-wash hover:text-ink">소개 페이지</Link>
@@ -395,6 +410,24 @@ function DashboardInner() {
                 </div>
               )}
             </div>
+          ) : view === "trash" ? (
+            <div className="flex flex-col gap-6 animate-fade-up">
+              <Head title="휴지통" count={trashed.length} />
+              {trashed.length === 0 ? (
+                <div className="kr rounded-[10px] border border-dashed border-line px-4 py-10 text-center text-[13px] text-muted">비어 있습니다. 지운 캔버스는 30일 동안 여기에 남습니다.</div>
+              ) : (
+                <div className="overflow-hidden rounded-[10px] border border-line bg-surface">
+                  {trashed.map((p) => (
+                    <div key={p.id} className="flex h-12 items-center gap-3 border-b border-wash px-4 text-[14px]">
+                      <span className="flex-1 truncate font-medium">{p.name}</span>
+                      <span className="text-[12px] text-faint">{ago(p.deletedAt!)} 지움</span>
+                      <Btn size="sm" onClick={() => { restoreProject(p.id); toast("복원했어요"); }}>복원</Btn>
+                      <Btn size="sm" variant="danger" onClick={() => { if (confirm(`"${p.name}" 을 영구 삭제할까요? 되돌릴 수 없어요.`)) deleteProject(p.id); }}>영구 삭제</Btn>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           ) : (
             <SettingsView />
           )}
@@ -433,6 +466,7 @@ function CardMenu({ onRename, onDelete, className }: { onRename: () => void; onD
 }
 
 function SettingsView() {
+  const fileRef = useRef<HTMLInputElement>(null);
   const [ai, setAi] = useState<"checking" | "on" | "off">("checking");
   const [used, setUsed] = useState("");
   useEffect(() => {
@@ -443,6 +477,22 @@ function SettingsView() {
     const bytes = new Blob([localStorage.getItem("motive.doc.v1") ?? ""]).size;
     setUsed(bytes < 1024 * 1024 ? `약 ${Math.max(1, Math.round(bytes / 1024))} KB 사용` : `약 ${(bytes / 1024 / 1024).toFixed(1)} MB 사용`);
   }, []);
+
+  function exportAll() {
+    const blob = new Blob([useDoc.getState().exportAll()], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `motive-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  async function importFile(f: File | undefined) {
+    if (!f) return;
+    const ok = useDoc.getState().importAll(await f.text());
+    toast(ok ? "백업을 합쳤어요" : "Motive 백업 파일이 아니에요");
+    if (fileRef.current) fileRef.current.value = "";
+  }
 
   function wipe() {
     if (!confirm("이 브라우저의 Motive 데이터를 모두 지울까요? 프로젝트도 함께 사라져요.")) return;
@@ -479,10 +529,13 @@ function SettingsView() {
       <div className="flex flex-col gap-3 rounded-[10px] border border-line bg-surface p-4">
         <div className="font-semibold">데이터</div>
         <div className="flex flex-wrap gap-2">
+          <Btn onClick={exportAll}>전체 내보내기 (.json)</Btn>
+          <Btn onClick={() => fileRef.current?.click()}>가져오기</Btn>
+          <input ref={fileRef} type="file" accept="application/json,.json" className="hidden" onChange={(e) => importFile(e.target.files?.[0])} />
           <span className="flex-1" />
           <Btn variant="danger" onClick={wipe}>이 브라우저의 데이터 지우기</Btn>
         </div>
-        <div className="kr text-[13px] text-muted">브라우저 데이터를 지우면 프로젝트도 함께 사라집니다. 인계 문서는 각 캔버스에서 먼저 내보내 두세요.</div>
+        <div className="kr text-[13px] text-muted">브라우저 데이터를 지우면 프로젝트도 함께 사라집니다. 먼저 내보내 두세요. 가져오기는 같은 id 의 캔버스를 파일 쪽으로 덮어씁니다.</div>
       </div>
     </div>
   );

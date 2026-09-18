@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "check": "tsx lib/md.check.ts && tsx lib/blocks.check.ts && tsx lib/tidy.check.ts && tsx lib/spotlight.check.ts && tsx lib/issues.check.ts && tsx lib/export.check.ts"
+    "check": "tsx lib/md.check.ts && tsx lib/blocks.check.ts && tsx lib/tidy.check.ts && tsx lib/spotlight.check.ts && tsx lib/issues.check.ts && tsx lib/export.check.ts && tsx lib/store.check.ts"
   },
   "dependencies": {
     "@openrouter/ai-sdk-provider": "^3.0.0",

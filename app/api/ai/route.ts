@@ -91,6 +91,7 @@ export async function POST(req: Request) {
 
       const { object } = await generateObject({
         model: model(),
+        maxOutputTokens: 2048, // 구조화 출력은 작다. OpenRouter 는 크레딧 대비 max_tokens 를 검사한다.
         schema: coldStart,
         system: GUARD,
         prompt: `다음 문제 진술을 읽고 세 가지를 뽑아라.
@@ -119,6 +120,7 @@ ${problem}`,
 
       const { object } = await generateObject({
         model: model(),
+        maxOutputTokens: 2048, // 구조화 출력은 작다. OpenRouter 는 크레딧 대비 max_tokens 를 검사한다.
         schema: evidenceOut,
         system: GUARD,
         prompt: `아래는 줄 번호가 붙은 자료 원문이다. 현재 캔버스의 카드와 관련된 근거 후보를 찾아라.
@@ -145,6 +147,7 @@ ${numbered}`,
 
       const { object } = await generateObject({
         model: model(),
+        maxOutputTokens: 2048, // 구조화 출력은 작다. OpenRouter 는 크레딧 대비 max_tokens 를 검사한다.
         schema: summary,
         system: GUARD,
         prompt: `아래 자료를 읽고 무엇이 들어 있는지 알려줘라.
@@ -166,6 +169,7 @@ ${text}`,
       const problem = String(body.problem ?? "").slice(0, 4000);
       const { object } = await generateObject({
         model: model(),
+        maxOutputTokens: 2048, // 구조화 출력은 작다. OpenRouter 는 크레딧 대비 max_tokens 를 검사한다.
         schema: refine,
         system: GUARD,
         prompt: `다음 문제 진술을 한 문장으로 정리하라. 대상·상황·불편이 드러나야 한다.

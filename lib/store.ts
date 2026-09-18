@@ -62,7 +62,17 @@ interface DocState {
    * 원본과 고르지 않은 카드는 그대로 두고, 고른 것들 사이의 관계만 복제본에도 잇는다.
    */
   duplicateNodes: (pid: string, ids: string[]) => string[];
+  /** 휴지통으로. 데이터는 그대로 두고 deletedAt 만 찍는다. */
+  trashProject: (pid: string) => void;
+  restoreProject: (pid: string) => void;
+  /** 영구 삭제. 휴지통에서만 부른다. */
   deleteProject: (pid: string) => void;
+  /** 30일 지난 휴지통 항목을 비운다. 대시보드가 열릴 때 부른다. */
+  purgeTrash: () => void;
+  /** 전체 백업. 되돌리기 이력은 빼고 프로젝트·문서만 담는다. */
+  exportAll: () => string;
+  /** 백업 파일을 합친다. 같은 id 는 파일 쪽으로 덮어쓴다. 읽을 수 없으면 false. */
+  importAll: (json: string) => boolean;
   renameProject: (pid: string, name: string) => void;
 
   nextId: (pid: string, kind: Kind) => string;
@@ -284,12 +294,51 @@ export const useDoc = create<DocState>()(
           return Object.values(idMap);
         },
 
+        trashProject: (pid) =>
+          set((s) => ({ projects: s.projects.map((p) => (p.id === pid ? { ...p, deletedAt: now() } : p)) })),
+
+        restoreProject: (pid) =>
+          set((s) => ({
+            projects: s.projects.map((p) => (p.id === pid ? { ...p, deletedAt: undefined, updatedAt: now() } : p)),
+          })),
+
         deleteProject: (pid) =>
           set((s) => {
             const docs = { ...s.docs };
             delete docs[pid];
             return { projects: s.projects.filter((p) => p.id !== pid), docs };
           }),
+
+        purgeTrash: () => {
+          const cut = Date.now() - 30 * 24 * 60 * 60 * 1000;
+          for (const p of get().projects) if (p.deletedAt && new Date(p.deletedAt).getTime() < cut) get().deleteProject(p.id);
+        },
+
+        exportAll: () => {
+          const { projects, docs } = get();
+          const slim = Object.fromEntries(Object.entries(docs).map(([k, d]) => [k, { ...d, undo: [], redo: [] }]));
+          return JSON.stringify({ app: "motive", version: 1, exportedAt: now(), projects, docs: slim }, null, 2);
+        },
+
+        importAll: (json) => {
+          let data: { app?: string; projects?: Project[]; docs?: Record<string, Doc> };
+          try {
+            data = JSON.parse(json);
+          } catch {
+            return false;
+          }
+          if (data.app !== "motive" || !Array.isArray(data.projects) || !data.docs) return false;
+          const incoming = data.projects;
+          const docs = data.docs;
+          set((s) => {
+            const ids = new Set(incoming.map((p) => p.id));
+            return {
+              projects: [...incoming, ...s.projects.filter((p) => !ids.has(p.id))],
+              docs: { ...s.docs, ...Object.fromEntries(Object.entries(docs).map(([k, d]) => [k, { ...emptyDoc(), ...d, undo: [], redo: [] }])) },
+            };
+          });
+          return true;
+        },
 
         renameProject: (pid, name) =>
           set((s) => ({
