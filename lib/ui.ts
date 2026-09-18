@@ -190,7 +190,7 @@ export const useUi = create<UiState>()((set, get) => ({
   setFocusView: (focusView) => set({ focusView, spotlight: null }),
   setSpotlight: (spotlight) => set({ spotlight, focusView: null }),
   setPan: (pan) => set({ pan }),
-  setZoom: (zoom) => set({ zoom: Math.min(2, Math.max(0.5, zoom)) }),
+  setZoom: (zoom) => set({ zoom: Math.min(4, Math.max(0.1, zoom)) }),
   setPhase: (phase) => set({ phase }),
   setSave: (save) => set({ save }),
   setCmdk: (cmdk) => set({ cmdk }),

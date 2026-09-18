@@ -513,7 +513,7 @@ export function Canvas({
       ev.preventDefault();
       const box = el!.getBoundingClientRect();
       const { pan, zoom } = useUi.getState();
-      const next = Math.min(2, Math.max(0.3, zoom * (ev.deltaY > 0 ? 0.94 : 1.06)));
+      const next = Math.min(4, Math.max(0.1, zoom * (ev.deltaY > 0 ? 0.94 : 1.06)));
       // 포인터가 가리키던 지점이 제자리에 남도록 pan 을 같이 옮긴다.
       const cx = ev.clientX - box.left;
       const cy = ev.clientY - box.top;

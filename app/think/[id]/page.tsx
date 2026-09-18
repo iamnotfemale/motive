@@ -61,6 +61,26 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
 
   useEffect(() => () => useUi.getState().reset(), [pid]);
 
+  // 데모는 카드가 12장이라 25% 로 열어 전체 구조가 먼저 보이게 한다. 이후 확대는 사용자가.
+  useEffect(() => {
+    if (!hydrated || !project?.demo || !doc) return;
+    const z = 0.25;
+    const spots = Object.values(doc.placements);
+    const minX = Math.min(...spots.map((p) => p.x));
+    const minY = Math.min(...spots.map((p) => p.y));
+    const maxX = Math.max(...spots.map((p) => p.x)) + 288;
+    const maxY = Math.max(...spots.map((p) => p.y)) + 400;
+    const w = (maxX - minX) * z;
+    const h = (maxY - minY) * z;
+    useUi.getState().setZoom(z);
+    useUi.getState().setPan({
+      x: Math.max(80, (window.innerWidth - w) / 2) - minX * z,
+      y: Math.max(80, (window.innerHeight - 52 - h) / 2) - minY * z,
+    });
+    // pid 가 바뀔 때 한 번만. doc 변경마다 되돌리면 사용자의 이동을 덮어쓴다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, pid, project?.demo]);
+
   /* ── 카드 만들기 ── */
   const addCard = useCallback(
     (
