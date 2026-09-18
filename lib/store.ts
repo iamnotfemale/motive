@@ -192,7 +192,7 @@ export const useDoc = create<DocState>()(
           doc.placements = {
             ...Object.fromEntries(doc.nodes.map((n) => [n.id, DEMO_POS[n.id] ?? { x: 72, y: 48 }])),
             // 자료도 캔버스 위에 아이콘으로 놓인다.
-            [DEMO_SOURCE.id]: { x: 1148, y: 48 },
+            [DEMO_SOURCE.id]: { x: 1376, y: 48 },
           };
           set((s) => ({
             projects: [
