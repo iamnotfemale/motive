@@ -4,6 +4,7 @@
  * 서비스 소개 페이지. 와이어프레임 `Motive Landing` 을 옮겼다.
  * 장면(캔버스 그림)은 components/landing/Scene 이 그리고, 스크롤로 들어오면 나타난다.
  */
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { Instrument_Serif } from "next/font/google";
@@ -31,7 +32,7 @@ export default function Landing() {
       {/* Nav */}
       <div className="sticky top-0 z-50 flex h-14 items-center border-b border-line/70 bg-wash-2/80 px-6 backdrop-blur-md">
         <div className="mx-auto flex w-full max-w-[1120px] items-center gap-2">
-          <a href="#top" className="text-[15px] font-semibold tracking-[-0.01em]">Motive</a>
+          <a href="#top" className="flex items-center gap-2 text-[15px] font-semibold tracking-[-0.01em]"><Image src="/logo.png" alt="" width={22} height={17} priority />Motive</a>
           <span className="flex-1" />
           <nav className="hidden gap-1 sm:flex">
             {[["#product", "Product"], ["#usecases", "Use cases"], ["#why", "Why"], ["#oneplace", "Workflow"]].map(([href, label]) => (

@@ -4,6 +4,7 @@
  * 관리 페이지(워크스페이스 홈). 와이어프레임 `Motive Home` 을 옮겼다.
  * 아이디어(캔버스 목록) / 파일(자료) / 설정. 캔버스를 열면 /think/[id] 로 간다.
  */
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
@@ -187,7 +188,7 @@ function DashboardInner() {
         style={{ width: open ? 248 : 60 }}
       >
         <div className="flex h-9 items-center gap-2 px-1.5">
-          {open && <Link href="/" className="flex-1 pl-1.5 text-[15px] font-semibold tracking-[-0.01em]">Motive</Link>}
+          {open && <Link href="/" className="flex flex-1 items-center gap-2 pl-1.5 text-[15px] font-semibold tracking-[-0.01em]"><Image src="/logo.png" alt="" width={22} height={17} />Motive</Link>}
           <Btn variant="ghost" size="icon" onClick={() => setOpen((o) => !o)} title={open ? "사이드바 접기" : "사이드바 펼치기"}>
             {open ? <PanelLeftClose className="size-4" /> : <PanelLeftOpen className="size-4" />}
           </Btn>
