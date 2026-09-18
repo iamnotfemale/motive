@@ -6,7 +6,6 @@
  * 왼쪽부터 도구(선택·손·격자·블록 추가) → 되돌리기 → 정리 → 단계별 핵심 행동 → 확대·축소.
  * 단계별 행동만 `정의 / 탐색 / 검토 / 결정 / 인계` 에 따라 바뀐다 (lib/phases.ts).
  */
-import { useRef } from "react";
 import { Hand, Maximize2, MousePointer2, Paperclip, Plus, Redo2, Sparkles, Undo2 } from "lucide-react";
 import { Btn } from "@/components/kit";
 import { Icon } from "@/components/icon";
@@ -40,15 +39,14 @@ interface Props {
   onFit: () => void;
   hasSelection: boolean;
   onAction: (key: ActionKey) => void;
+  /** 지금 비추고 있는 단추. 눌린 상태로 보여준다. */
+  spotlightKey: string | null;
   onAddKind: (kind: Kind) => void;
-  onFiles: (files: File[]) => void;
 }
 
 const ADD_KINDS: Kind[] = ["claim", "question", "note", "evidence", "solution"];
 
 export function Toolbar(p: Props) {
-  const fileRef = useRef<HTMLInputElement>(null);
-
   const tools: { key: Tool; icon: typeof Hand; label: string; hint: string }[] = [
     { key: "select", icon: MousePointer2, label: "선택", hint: "V" },
     { key: "hand", icon: Hand, label: "손으로 이동", hint: "H · Space" },
@@ -172,21 +170,25 @@ export function Toolbar(p: Props) {
             <button
               type="button"
               aria-label={a.ko}
-              onClick={() => (a.key === "attach" ? fileRef.current?.click() : p.onAction(a.key))}
-              className="flex h-8 items-center gap-1.5 rounded-[6px] px-2 text-[14px] font-medium text-ink transition-colors duration-[120ms] hover:bg-wash"
+              aria-pressed={p.spotlightKey === a.key}
+              onClick={() => p.onAction(a.key)}
+              className={cn(
+                "flex h-8 items-center gap-1.5 rounded-[6px] px-2 text-[14px] font-medium transition-colors duration-[120ms] hover:bg-wash",
+                p.spotlightKey === a.key ? "bg-[#eff6ff] text-brand" : "text-ink",
+              )}
             >
               {a.key === "attach" ? (
-                <Paperclip className="size-4 text-muted" />
+                <Paperclip className={cn("size-4", p.spotlightKey === a.key ? "text-brand" : "text-muted")} />
               ) : (
-                <Icon name={a.icon} className="size-4 text-muted" />
+                <Icon
+                  name={a.icon}
+                  className={cn("size-4", p.spotlightKey === a.key ? "text-brand" : "text-muted")}
+                />
               )}
               <span className="whitespace-nowrap">{a.ko}</span>
             </button>
           </TooltipTrigger>
-          <TooltipContent side="top">
-            {a.ko}
-            {a.hint && <span className="ml-1.5 font-mono text-[12px] opacity-60">{a.hint}</span>}
-          </TooltipContent>
+          <TooltipContent side="top">{a.ko}만 보기</TooltipContent>
         </Tooltip>
       ))}
 
@@ -231,19 +233,6 @@ export function Toolbar(p: Props) {
           {p.hasSelection ? "고른 카드에 맞춰 확대" : "전체에 맞춤"}
         </TooltipContent>
       </Tooltip>
-
-      <input
-        ref={fileRef}
-        type="file"
-        multiple
-        accept=".md,.markdown,.txt,.text,.csv,.json,.log,.pdf"
-        className="hidden"
-        onChange={(e) => {
-          const files = [...(e.target.files ?? [])];
-          e.target.value = "";
-          if (files.length) p.onFiles(files);
-        }}
-      />
     </div>
   );
 }

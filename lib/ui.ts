@@ -72,6 +72,8 @@ interface UiState {
   inspTab: InspectorTab;
   editMode: EditMode;
   focusView: string | null;
+  /** 도구 막대 단추가 비추는 블록 묶음. 집중 보기와 같은 방식으로 나머지를 흐린다. */
+  spotlight: { key: string; ko: string; ids: string[] } | null;
   pan: { x: number; y: number };
   zoom: number;
   phase: Phase | null;
@@ -110,6 +112,7 @@ interface UiState {
   setInspTab: (t: InspectorTab) => void;
   setEditMode: (m: EditMode) => void;
   setFocusView: (id: string | null) => void;
+  setSpotlight: (s: { key: string; ko: string; ids: string[] } | null) => void;
   setPan: (p: { x: number; y: number }) => void;
   setZoom: (z: number) => void;
   setPhase: (p: Phase | null) => void;
@@ -145,6 +148,7 @@ const initial = {
   inspTab: "content" as InspectorTab,
   editMode: "write" as EditMode,
   focusView: null,
+  spotlight: null as { key: string; ko: string; ids: string[] } | null,
   pan: { x: 0, y: 0 },
   zoom: 1,
   phase: null,
@@ -183,7 +187,8 @@ export const useUi = create<UiState>()((set, get) => ({
   closePanel: () => set({ panel: null }),
   setInspTab: (inspTab) => set({ inspTab }),
   setEditMode: (editMode) => set({ editMode }),
-  setFocusView: (focusView) => set({ focusView }),
+  setFocusView: (focusView) => set({ focusView, spotlight: null }),
+  setSpotlight: (spotlight) => set({ spotlight, focusView: null }),
   setPan: (pan) => set({ pan }),
   setZoom: (zoom) => set({ zoom: Math.min(2, Math.max(0.5, zoom)) }),
   setPhase: (phase) => set({ phase }),
@@ -211,6 +216,7 @@ export const useUi = create<UiState>()((set, get) => ({
     if (s.connecting) return set({ connecting: null });
     if (s.cmdk) return set({ cmdk: false });
     if (s.tool !== "select") return set({ tool: "select" });
+    if (s.spotlight) return set({ spotlight: null });
     if (s.focusView) return set({ focusView: null });
     if (s.selEdge) return set({ selEdge: null });
     if (s.panel) return set({ panel: null });

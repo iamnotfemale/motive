@@ -152,7 +152,17 @@ export function Canvas({
    * 형제 가지(다른 가설과 그 아래)는 빠지고, 줄기에 붙은 근거·질문은 남는다.
    */
   const focus = useMemo(() => {
-    if (!ui.focusView || !doc) return null;
+    if (!doc) return null;
+
+    // 도구 막대에서 비추는 중이면 그 묶음만 남긴다
+    if (ui.spotlight) {
+      const keep = new Set(ui.spotlight.ids);
+      const keepEdges = new Set<string>();
+      for (const e of doc.edges) if (keep.has(e.from) && keep.has(e.to)) keepEdges.add(e.id);
+      return { keep, keepEdges };
+    }
+
+    if (!ui.focusView) return null;
     const keep = new Set<string>([ui.focusView]);
 
     // 1) 방향을 따라 내려가며 모두 담는다
@@ -179,7 +189,7 @@ export function Canvas({
     const keepEdges = new Set<string>();
     for (const e of doc.edges) if (keep.has(e.from) && keep.has(e.to)) keepEdges.add(e.id);
     return { keep, keepEdges };
-  }, [ui.focusView, doc]);
+  }, [ui.focusView, ui.spotlight, doc]);
 
   /* ── 화면 이동·확대는 전부 여기를 거친다. 한 번에 하나만 돈다 ── */
   const viewAnim = useRef<number | null>(null);
@@ -916,7 +926,22 @@ export function Canvas({
         )}
       </AnimatePresence>
 
-      {ui.focusView && (
+      {ui.spotlight && (
+        <div
+          data-ui="spotlight"
+          className="absolute top-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2.5 rounded-[8px] border border-line bg-surface py-2 pr-2 pl-3.5 text-[15px] shadow-[0_4px_12px_rgba(24,24,27,.08)] animate-fade-up"
+        >
+          <span className="font-medium">{ui.spotlight.ko}</span>
+          <span className="text-muted">
+            {ui.spotlight.ids.length}개만 보고 있어요. 나머지는 그대로 있어요.
+          </span>
+          <Btn size="sm" onClick={() => useUi.getState().setSpotlight(null)}>
+            전체 보기
+          </Btn>
+        </div>
+      )}
+
+      {ui.focusView && !ui.spotlight && (
         <div
           data-ui="focus"
           className="absolute top-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2.5 rounded-[8px] border border-line bg-surface py-2 pr-2 pl-3.5 text-[15px] shadow-[0_4px_12px_rgba(24,24,27,.08)] animate-fade-up"

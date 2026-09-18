@@ -6,7 +6,7 @@
  * 왼쪽은 레일 + 밀려나오는 패널, 오른쪽은 선택한 대상의 패널, 아래는 도구 막대.
  * 상시 AI 채팅 칼럼을 만들지 않는다 (스펙 §30.5).
  */
-import { use, useCallback, useEffect, useMemo, useState } from "react";
+import { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence } from "motion/react";
 import { toast } from "sonner";
@@ -26,7 +26,8 @@ import { WideEditor } from "@/components/WideEditor";
 import { extractFile } from "@/lib/extract";
 import { summarize } from "@/lib/issues";
 import { type Kind, kindOf } from "@/lib/labels";
-import { DEFAULT_PHASE, type ActionKey } from "@/lib/phases";
+import { DEFAULT_PHASE, SPOTLIGHT_KEYS, type ActionKey } from "@/lib/phases";
+import { spotlightFor } from "@/lib/spotlight";
 import { nextFreeSpot, useDoc } from "@/lib/store";
 import { blankMd } from "@/lib/templates";
 import { flashSaved, useUi } from "@/lib/ui";
@@ -50,6 +51,8 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
   const phase: Phase = ui.phase ?? DEFAULT_PHASE;
 
   const [issuePanel, setIssuePanel] = useState<"issues" | "conflicts" | null>(null);
+  // 레일의 `자료 첨부` 가 여는 파일 선택기. 도구 막대는 비추기만 한다.
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const { issues, conflicts } = useMemo(
     () => (doc ? summarize(doc) : { issues: [], conflicts: [] }),
@@ -172,7 +175,28 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
     });
   }, [pid, store]);
 
-  /* ── 단계별 행동 ── */
+  /**
+   * 아래 도구 막대 — 그 단계에서 볼 블록만 남기고 나머지를 흐린다.
+   * 같은 단추를 다시 누르면 전체로 돌아온다. 그래프는 건드리지 않는다.
+   */
+  const spotlight = useCallback(
+    (key: ActionKey) => {
+      const d = useDoc.getState().docs[pid];
+      if (!d) return;
+      if (useUi.getState().spotlight?.key === key) return useUi.getState().setSpotlight(null);
+
+      const s = spotlightFor(key, d);
+      if (!s) return;
+      if (!s.ids.length) {
+        useUi.getState().setSpotlight(null);
+        return toast(s.empty ?? "비출 블록이 없어요.");
+      }
+      useUi.getState().setSpotlight({ key: s.key, ko: s.ko, ids: s.ids });
+    },
+    [pid],
+  );
+
+  /* ── 왼쪽 레일의 실행 동작 ── */
   const runAction = useCallback(
     (key: ActionKey) => {
       const d = useDoc.getState().docs[pid];
@@ -205,6 +229,8 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
           useUi.getState().select([solution.id]);
           return useUi.getState().openPanel("decision");
         }
+        case "attach":
+          return fileRef.current?.click();
         case "sources":
         case "url":
           return useUi.getState().openLeft("sources");
@@ -271,6 +297,15 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
           });
           useUi.getState().openPanel("review");
         } else {
+          useUi.getState().select([id]);
+          useUi.getState().openPanel("inspector");
+          useUi.getState().setInspTab("links");
+        }
+        return;
+      }
+      if (kind === "question") {
+        if (index === 0) useUi.getState().openLeft("sources");
+        else {
           useUi.getState().select([id]);
           useUi.getState().openPanel("inspector");
           useUi.getState().setInspTab("links");
@@ -449,9 +484,9 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
           onZoom={(z) => useUi.getState().requestZoom(z)}
           hasSelection={ui.sel.length > 0}
           onFit={() => useUi.getState().requestFit()}
-          onAction={runAction}
+          onAction={(key) => (SPOTLIGHT_KEYS.includes(key) ? spotlight(key) : runAction(key))}
+          spotlightKey={ui.spotlight?.key ?? null}
           onAddKind={(kind) => addCard(kind)}
-          onFiles={(f) => void addFiles(f)}
         />
 
         <AnimatePresence mode="wait">
@@ -472,6 +507,19 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
           />
         )}
       </div>
+
+      <input
+        ref={fileRef}
+        type="file"
+        multiple
+        accept=".md,.markdown,.txt,.text,.csv,.json,.log,.pdf"
+        className="hidden"
+        onChange={(e) => {
+          const files = [...(e.target.files ?? [])];
+          e.target.value = "";
+          if (files.length) void addFiles(files);
+        }}
+      />
 
       <AnimatePresence>{ui.wide && <WideEditor key="wide" pid={pid} />}</AnimatePresence>
 
