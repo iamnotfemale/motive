@@ -1,0 +1,101 @@
+{
+  "$meta": {
+    "product": "Project (제품명 미정) — 캔버스형 추론 워크스페이스",
+    "version": "0.1.0",
+    "status": "검토 대기 (승인 전)",
+    "date": "2026-09-19",
+    "contract": "problem-to-handoff/v1",
+    "source": "WIREFRAME_DESIGN_BRIEF.md §5 시작 토큰. 실제 화면에서 확인 후 소폭 조정만 함."
+  },
+  "color": {
+    "canvas-bg": { "value": "#F7F8FA", "role": "작업 공간 배경" },
+    "surface": { "value": "#FFFFFF", "role": "노드·팝오버·패널" },
+    "surface-subtle": { "value": "#F3F4F6", "role": "보조 컨트롤·선택 전 배경·세그먼트 트랙" },
+    "surface-code": { "value": "#FAFAFB", "role": "Markdown 원문 편집·미리보기 원문 배경 (추가)" },
+    "text-primary": { "value": "#111827", "role": "제목·본문·기본 버튼 배경" },
+    "text-secondary": { "value": "#667085", "role": "보조 설명·유형 배지·관계 라벨" },
+    "text-tertiary": { "value": "#98A2B3", "role": "ID·플레이스홀더·비활성 아이콘 (border-strong과 동일값)" },
+    "border": { "value": "#E5E7EB", "role": "기본 경계" },
+    "border-strong": { "value": "#98A2B3", "role": "hover 경계·관계선·후보 점선" },
+    "accent": { "value": "#2563EB", "role": "선택·포커스·주요 액션·드롭 대상" },
+    "accent-hover": { "value": "#1D4ED8", "role": "주요 버튼 hover (추가)" },
+    "accent-subtle": { "value": "#EFF6FF", "role": "선택 배경·focus ring 외곽·선택된 관계 라벨" },
+    "accent-border": { "value": "#BFDBFE", "role": "AI 제안 블록 경계 (추가)" },
+    "success": { "value": "#147D4C", "role": "저장 성공·승인·채택·확정" },
+    "success-subtle": { "value": "#ECFDF3", "role": "승인 배지 배경 (추가)" },
+    "warning": { "value": "#9A6700", "role": "미검증·미확정·주의·데모 자료 표시" },
+    "warning-subtle": { "value": "#FFFAEB", "role": "주의 배너·미확정 배지 배경 (추가)" },
+    "warning-border": { "value": "#FEDF89", "role": "주의 배너 경계 (추가)" },
+    "danger": { "value": "#B42318", "role": "오류·반대 근거의 작은 점 표식 (카드 전체 채색 금지)" },
+    "danger-border": { "value": "#FECDCA", "role": "원본 없음 출처 칩 경계 (추가)" },
+    "ink": { "value": "#111827", "role": "기본(검정) 버튼·토스트 배경" },
+    "ink-hover": { "value": "#1F2937", "role": "기본 버튼 hover" }
+  },
+  "typography": {
+    "family": {
+      "ui": "\"Pretendard Variable\", Pretendard, -apple-system, BlinkMacSystemFont, \"Apple SD Gothic Neo\", \"Malgun Gothic\", system-ui, sans-serif",
+      "mono": "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+      "note": "Pretendard는 SIL OFL 1.1. 프로토타입은 jsDelivr CDN(가변 다이내믹 서브셋) 링크로 로드하며 폰트 파일을 산출물에 포함하지 않음."
+    },
+    "scale": {
+      "screen-title": { "size": 24, "line": 32, "weight": 600, "letterSpacing": "-0.01em" },
+      "panel-title": { "size": 16, "line": 24, "weight": 600 },
+      "node-title": { "size": 16, "line": 24, "weight": 500, "maxLines": 3 },
+      "doc-body": { "size": 16, "line": 26, "weight": 400 },
+      "editor-body": { "size": 15, "line": 24, "weight": 400 },
+      "ui-body": { "size": 14, "line": 20, "weight": 400 },
+      "ui-body-loose": { "size": 14, "line": 22, "weight": 400 },
+      "ui-small": { "size": 13, "line": 18, "weight": 400 },
+      "meta": { "size": 12, "line": 16, "weight": 400, "note": "역할·상태·관계 라벨. 이보다 작게 줄이지 않음" },
+      "id-mono": { "size": 11, "line": 16, "weight": 400, "family": "mono" },
+      "code": { "size": 13, "line": 20, "weight": 400, "family": "mono" }
+    }
+  },
+  "spacing": { "unit": [4, 8, 12, 16, 24, 32], "card-padding": 16, "panel-padding": 20, "panel-padding-lg": 24, "canvas-column-gap": 120, "canvas-row-gap": 224 },
+  "size": {
+    "header-height": 64,
+    "button-height": 36,
+    "button-height-dense": 32,
+    "button-height-compact": 28,
+    "rail-width": 48,
+    "rail-offset": { "left": 16, "top": 20 },
+    "node-width": { "default": 288, "min": 280, "max": 320 },
+    "node-height-range": [132, 210],
+    "dock-height": 48,
+    "dock-bottom": 24,
+    "dock-bottom-with-shelf": 284,
+    "inspector-width": { "1440": 400, "1280": 360 },
+    "review-width": { "1440": 440, "1280": 400 },
+    "shelf-height": 260,
+    "handoff-left-width": { "1440": 300, "1280": 272 },
+    "command-menu-width": 560,
+    "problem-start-width": 720
+  },
+  "radius": { "button": 8, "chip": 4, "control-inner": 6, "card": 10, "panel": 12, "popover": 12, "toast": 10 },
+  "border": { "default": "1px solid #E5E7EB", "selected": "1px solid #2563EB", "candidate": "1px dashed #98A2B3", "drop-target": "2px solid #2563EB" },
+  "shadow": {
+    "card": "0 1px 2px rgba(17,24,39,.04)",
+    "card-hover": "0 2px 8px rgba(17,24,39,.08)",
+    "card-selected": "0 0 0 3px #EFF6FF, 0 2px 8px rgba(17,24,39,.06)",
+    "popover": "0 4px 12px rgba(17,24,39,.08)",
+    "menu": "0 8px 24px rgba(17,24,39,.10)",
+    "dialog": "0 16px 48px rgba(17,24,39,.16)",
+    "panel-side": "-4px 0 16px rgba(17,24,39,.04)",
+    "note": "카드마다 큰 그림자·유리 배경 금지. glow는 선택/드롭 대상에만."
+  },
+  "focus": { "ring": "2px solid #2563EB", "offset": 2, "input": "border-color #2563EB + 0 0 0 3px #EFF6FF" },
+  "edge": { "stroke": "#98A2B3", "stroke-selected": "#2563EB", "width": 1.5, "width-selected": 2, "candidate-dash": "5 5", "arrow": { "length": 9, "halfWidth": 4.5 }, "label": { "height": 20, "padding": "0 7px", "font": "meta" } },
+  "motion": {
+    "hover-select": { "duration": "100–140ms", "used": 120, "easing": "ease-out", "props": ["background", "border-color", "box-shadow", "opacity", "color"] },
+    "menu-popover": { "duration": "140–180ms", "used": 160, "keyframes": "popIn (opacity 0→1, scale .98→1)" },
+    "inspector-open": { "duration": "180–220ms", "used": 200, "keyframes": "slideIn (translateX 16px→0 + fade)" },
+    "drop-target": { "duration": "즉시", "treatment": "accent 2px outline 1회, 라벨 '이 {유형}에 자료 첨부'" },
+    "candidate-appear": { "duration": "180–240ms", "used": 220, "keyframes": "fadeUp" },
+    "candidate-approve": { "duration": "200–260ms", "used": 200, "treatment": "점선 카드 → 실선 카드(cardIn), 점선 관계 → 실선" },
+    "decision-confirm": { "duration": "160–220ms", "used": 200, "treatment": "배지 초안→확정, 토스트" },
+    "drag": { "duration": 0, "treatment": "포인터 즉시 추종, spring 없음" },
+    "canvas-pan-zoom": { "duration": 200, "treatment": "버튼 조작 시만 transform 200ms, 드래그 중 none" },
+    "indeterminate": { "duration": "1.2s loop", "treatment": "진행률 미상 시 막대 왕복, % 표시 금지" },
+    "reduced-motion": "prefers-reduced-motion: 모든 animation/transition 1ms — 상태는 텍스트·아이콘·색으로 동일 전달"
+  }
+}

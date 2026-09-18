@@ -1,0 +1,154 @@
+@import "tailwindcss";
+
+/*
+ * 색·크기는 와이어프레임 프로토타입(Project Wireframes.dc.html) 실측값이 기준이다.
+ * README 가 "recreate pixel-perfectly" 라고 지정했고, 프로토타입이 design-tokens.json 보다 나중 값이다.
+ * 차이: 프로토타입은 zinc 계열(#18181b/#71717a/#e4e4e7), 토큰 문서는 gray 계열(#111827/#667085/#E5E7EB).
+ */
+@theme {
+  --color-canvas: #fcfcfc;
+  --color-surface: #ffffff;
+  --color-wash: #f4f4f5;
+  --color-wash-2: #fafafa;
+
+  --color-ink: #18181b;
+  --color-ink-hover: #27272a;
+  --color-muted: #71717a;
+  --color-faint: #a1a1aa;
+
+  --color-line: #e4e4e7;
+  --color-line-strong: #a1a1aa;
+
+  /* 선택·포커스·드롭 대상. shadcn 의 --accent(=hover 배경)와 부딪히지 않게 brand 로 둔다. */
+  --color-brand: #2563eb;
+  --color-brand-hover: #1d4ed8;
+  --color-brand-wash: #eff6ff;
+
+  --color-ok: #3f3f46;
+  --color-warn: #9a6700;
+  --color-danger: #b42318;
+
+  --radius-card: 8px;
+  --radius-control: 6px;
+  --radius-badge: 4px;
+
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+    "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --animate-pop-in: popIn 140ms ease-out;
+  --animate-fade-up: fadeUp 200ms ease-out;
+  --animate-card-in: cardIn 200ms ease-out;
+  --animate-slide-in: slideIn 200ms ease-out;
+  --animate-indet: indet 1.2s ease-in-out infinite;
+
+  @keyframes popIn { from { opacity: 0; transform: scale(.98) } to { opacity: 1; transform: none } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: none } }
+  @keyframes cardIn { from { opacity: 0; transform: scale(.96) } to { opacity: 1; transform: none } }
+  @keyframes slideIn { from { opacity: 0; transform: translateX(16px) } to { opacity: 1; transform: none } }
+  @keyframes indet { 0% { left: -40% } 100% { left: 100% } }
+}
+
+/* shadcn/ui 컴포넌트가 쓰는 변수를 위 팔레트에 연결한다. 따로 색을 만들지 않는다. */
+:root {
+  --radius: 6px;
+  --background: #fcfcfc;
+  --foreground: #18181b;
+  --card: #ffffff;
+  --card-foreground: #18181b;
+  --popover: #ffffff;
+  --popover-foreground: #18181b;
+  --primary: #18181b;
+  --primary-foreground: #ffffff;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #18181b;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+  --accent: #f4f4f5;
+  --accent-foreground: #18181b;
+  --destructive: #b42318;
+  --destructive-foreground: #ffffff;
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --ring: #2563eb;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 20px;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+textarea,
+input,
+button,
+select {
+  font-family: inherit;
+}
+textarea:focus,
+input:focus {
+  outline: none;
+}
+
+/* 한국어 본문은 어절 단위로 끊는다. 카드 제목·인용·문서 본문에 붙인다. */
+.kr {
+  word-break: keep-all;
+  text-wrap: pretty;
+}
+
+/* 캔버스 격자 */
+.canvas-grid {
+  background-image: radial-gradient(circle at 1px 1px, #e4e4e7 1px, transparent 0);
+  background-size: 24px 24px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}
