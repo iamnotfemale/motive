@@ -50,7 +50,7 @@ export function CommandMenu({ pid, onAdd }: { pid: string; onAdd: (k: Kind) => v
               {p.ko} 단계
             </CommandItem>
           ))}
-          <CommandItem onSelect={() => run(() => useUi.getState().openPanel("shelf"))}>
+          <CommandItem onSelect={() => run(() => useUi.getState().openLeft("sources"))}>
             자료함 열기
           </CommandItem>
           <CommandItem onSelect={() => run(() => router.push(`/p/${pid}/handoff`))}>

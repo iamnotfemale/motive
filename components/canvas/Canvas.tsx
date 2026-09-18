@@ -1,22 +1,21 @@
 "use client";
 
 /**
- * CMP-03 추론 캔버스.
+ * CMP-03 추론 캔버스. 무한 캔버스 — 끝이 없고 도구는 화면에 떠 있다.
  *
  * 캔버스 좌표는 표현 상태다. 카드를 옮겨도 관계는 그대로다 (스펙 §5.4, §12.1).
- * 전체 자동 배치를 넣지 않는다 — 사용자가 만든 배치를 논리로 덮어쓰지 않는다 (스펙 §12.2).
+ * 전체 자동 배치를 넣지 않는다 (§12.2).
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { toast } from "sonner";
 import { Btn } from "@/components/kit";
 import { EdgeLayer, layoutEdges, type Rect } from "./Edges";
-import { NODE_W, NodeView } from "./SemanticNode";
+import { NODE_W, NodeView, type Side } from "./SemanticNode";
 import { SOURCE_W, SourceChip } from "./SourceChip";
-import { kindOf } from "@/lib/labels";
+import { EDGE_OPTIONS, KIND, kindOf } from "@/lib/labels";
 import { useDoc } from "@/lib/store";
 import { useUi } from "@/lib/ui";
-import type { ReasoningNode } from "@/lib/types";
+import type { EdgeType, ReasoningNode } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -26,6 +25,8 @@ interface Props {
   onAddFromSuggestion: (what: "claim" | "source" | "question" | "coldstart") => void;
   onSourceClick: (sourceId: string, targetId?: string) => void;
   onFilesDropped: (files: File[], at: { x: number; y: number }, targetId?: string) => void;
+  /** 블록 추가 도구로 빈 곳을 눌렀을 때. */
+  onPlaceBlock: (at: { x: number; y: number }) => void;
 }
 
 type DragKind = "node" | "source" | "pan" | null;
@@ -37,14 +38,19 @@ export function Canvas({
   onAddFromSuggestion,
   onSourceClick,
   onFilesDropped,
+  onPlaceBlock,
 }: Props) {
   const doc = useDoc((s) => s.docs[pid]);
   const moveNode = useDoc((s) => s.moveNode);
+  const store = useDoc.getState;
 
   const ui = useUi();
   const vpRef = useRef<HTMLDivElement>(null);
   const [heights, setHeights] = useState<Record<string, number>>({});
   const [fileOver, setFileOver] = useState(false);
+  const [pendingEdge, setPendingEdge] = useState<{ from: string; to: string; x: number; y: number } | null>(
+    null,
+  );
 
   const drag = useRef<{
     kind: DragKind;
@@ -60,17 +66,14 @@ export function Canvas({
     setHeights((prev) => (prev[id] === h ? prev : { ...prev, [id]: h }));
   }, []);
 
-  /* ── 좌표 변환 ── */
   const toCanvas = useCallback(
     (clientX: number, clientY: number) => {
       const r = vpRef.current?.getBoundingClientRect();
       if (!r) return { x: 0, y: 0 };
-      return {
-        x: (clientX - r.left - ui.pan.x) / ui.zoom,
-        y: (clientY - r.top - ui.pan.y) / ui.zoom,
-      };
+      const { pan, zoom } = useUi.getState();
+      return { x: (clientX - r.left - pan.x) / zoom, y: (clientY - r.top - pan.y) / zoom };
     },
-    [ui.pan.x, ui.pan.y, ui.zoom],
+    [],
   );
 
   const rects = useMemo(() => {
@@ -88,13 +91,9 @@ export function Canvas({
   }, [doc, heights]);
 
   const nodeMap = useMemo(() => new Map((doc?.nodes ?? []).map((n) => [n.id, n])), [doc]);
+  const geoms = useMemo(() => (doc ? layoutEdges(doc.edges, rects, nodeMap) : []), [doc, rects, nodeMap]);
 
-  const geoms = useMemo(
-    () => (doc ? layoutEdges(doc.edges, rects, nodeMap) : []),
-    [doc, rects, nodeMap],
-  );
-
-  /* ── Focus View — 선택한 카드 주변의 추론 사슬만 남긴다. 좌표는 건드리지 않는다 (스펙 §12.3) ── */
+  /* ── Focus View — 고른 카드 주변만 남기고 나머지는 회색으로 (스펙 §12.3) ── */
   const focus = useMemo(() => {
     if (!ui.focusView || !doc) return null;
     const keep = new Set<string>([ui.focusView]);
@@ -106,18 +105,57 @@ export function Canvas({
         keepEdges.add(e.id);
       }
     }
-    // 한 홉 더: 붙어 있는 결정/근거가 무엇에 연결됐는지까지 보여준다
-    for (const e of doc.edges) {
-      if (keep.has(e.from) && keep.has(e.to)) keepEdges.add(e.id);
-    }
+    for (const e of doc.edges) if (keep.has(e.from) && keep.has(e.to)) keepEdges.add(e.id);
     return { keep, keepEdges };
   }, [ui.focusView, doc]);
 
+  /* ── 새 카드가 생기면 그 카드를 화면 가운데로 부드럽게 ── */
+  const centerAnim = useRef<number | null>(null);
+  useEffect(() => {
+    const req = ui.center;
+    if (!req || !doc) return;
+    const at = doc.placements[req.id];
+    const vp = vpRef.current;
+    if (!at || !vp) return;
+
+    const { zoom, pan } = useUi.getState();
+    const h = heights[req.id] ?? 140;
+    const target = {
+      x: vp.clientWidth / 2 - (at.x + NODE_W / 2) * zoom,
+      y: vp.clientHeight / 2 - (at.y + h / 2) * zoom,
+    };
+    const from = { ...pan };
+    const t0 = performance.now();
+    const dur = 420;
+
+    if (centerAnim.current) cancelAnimationFrame(centerAnim.current);
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) {
+      useUi.getState().setPan(target);
+      return;
+    }
+    const step = (now: number) => {
+      const t = Math.min(1, (now - t0) / dur);
+      const e = 1 - Math.pow(1 - t, 3);
+      useUi.getState().setPan({
+        x: from.x + (target.x - from.x) * e,
+        y: from.y + (target.y - from.y) * e,
+      });
+      if (t < 1) centerAnim.current = requestAnimationFrame(step);
+    };
+    centerAnim.current = requestAnimationFrame(step);
+    return () => {
+      if (centerAnim.current) cancelAnimationFrame(centerAnim.current);
+    };
+    // 좌표가 잡힌 뒤 한 번만 돈다
+  }, [ui.center, doc, heights]);
+
   /* ── 포인터 드래그 ── */
   function startDrag(kind: Exclude<DragKind, null>, e: React.PointerEvent, id?: string) {
-    const origin = id ? doc?.placements[id] : ui.pan;
+    const origin = id ? doc?.placements[id] : useUi.getState().pan;
     if (!origin) return;
     (e.target as Element).setPointerCapture?.(e.pointerId);
+    if (id) store().pushHistory(pid);
     drag.current = {
       kind,
       id,
@@ -131,6 +169,15 @@ export function Canvas({
 
   useEffect(() => {
     function onMove(e: PointerEvent) {
+      const conn = useUi.getState().connecting;
+      if (conn) {
+        const at = toCanvas(e.clientX, e.clientY);
+        const el = document.elementFromPoint(e.clientX, e.clientY);
+        const over = el?.closest("[data-node-id]")?.getAttribute("data-node-id") ?? null;
+        useUi.getState().setConnecting({ ...conn, x: at.x, y: at.y, over: over === conn.from ? null : over });
+        return;
+      }
+
       const d = drag.current;
       if (!d) return;
       const dx = e.clientX - d.startX;
@@ -147,16 +194,23 @@ export function Canvas({
       const z = useUi.getState().zoom;
       moveNode(pid, d.id, { x: Math.round(d.originX + dx / z), y: Math.round(d.originY + dy / z) });
 
-      // 자료를 카드 위로 끌면 첨부 대상으로 표시한다
       if (d.kind === "source") {
         useUi.getState().setDragging(true);
         const el = document.elementFromPoint(e.clientX, e.clientY);
-        const target = el?.closest("[data-node-id]")?.getAttribute("data-node-id") ?? null;
-        useUi.getState().setDropTarget(target);
+        useUi.getState().setDropTarget(el?.closest("[data-node-id]")?.getAttribute("data-node-id") ?? null);
       }
     }
 
     function onUp(e: PointerEvent) {
+      const conn = useUi.getState().connecting;
+      if (conn) {
+        useUi.getState().setConnecting(null);
+        if (conn.over && conn.over !== conn.from) {
+          setPendingEdge({ from: conn.from, to: conn.over, x: e.clientX, y: e.clientY });
+        }
+        return;
+      }
+
       const d = drag.current;
       drag.current = null;
       if (!d) return;
@@ -164,15 +218,10 @@ export function Canvas({
       useUi.getState().setDragging(false);
       useUi.getState().setDropTarget(null);
 
-      if (d.kind === "source" && d.moved && dropTarget && d.id) {
-        onSourceClick(d.id, dropTarget);
-        return;
+      if (d.kind === "source" && d.id) {
+        if (d.moved && dropTarget) onSourceClick(d.id, dropTarget);
+        else if (!d.moved) onSourceClick(d.id);
       }
-      if (d.kind === "source" && !d.moved && d.id) {
-        onSourceClick(d.id);
-        return;
-      }
-      void e;
     }
 
     window.addEventListener("pointermove", onMove);
@@ -181,7 +230,7 @@ export function Canvas({
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
     };
-  }, [pid, moveNode, onSourceClick]);
+  }, [pid, moveNode, onSourceClick, toCanvas, store]);
 
   /* ── 파일 드롭 ── */
   function onDrop(e: React.DragEvent) {
@@ -210,10 +259,10 @@ export function Canvas({
   useEffect(() => {
     const el = vpRef.current;
     if (!el) return;
-    function onWheel(e: WheelEvent) {
-      if (!e.ctrlKey && !e.metaKey) return;
-      e.preventDefault();
-      useUi.getState().setZoom(useUi.getState().zoom * (e.deltaY > 0 ? 0.94 : 1.06));
+    function onWheel(ev: WheelEvent) {
+      if (!ev.ctrlKey && !ev.metaKey) return;
+      ev.preventDefault();
+      useUi.getState().setZoom(useUi.getState().zoom * (ev.deltaY > 0 ? 0.94 : 1.06));
     }
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
@@ -223,7 +272,9 @@ export function Canvas({
 
   const showSuggest = doc.nodes.length <= 1 && !ui.panel;
   const anchor = doc.placements["P-01"];
-  const anchorH = heights["P-01"] ?? 120;
+  const hand = ui.tool === "hand";
+  const addTool = ui.tool === "add";
+  const connecting = ui.connecting;
 
   return (
     <div
@@ -239,15 +290,26 @@ export function Canvas({
       }}
       onPointerDown={(e) => {
         if (e.button !== 0) return;
-        if ((e.target as Element).closest("[data-node-id],[data-source-id],[data-ui]")) return;
-        useUi.getState().select([]);
-        useUi.getState().selectEdge(null);
-        if (ui.panel === "inspector" || ui.panel === "refine") useUi.getState().closePanel();
+        const onItem = (e.target as Element).closest("[data-node-id],[data-source-id],[data-ui]");
+        if (onItem && !hand) return;
+
+        if (addTool && !onItem) {
+          const at = toCanvas(e.clientX, e.clientY);
+          onPlaceBlock({ x: Math.round(at.x - NODE_W / 2), y: Math.round(at.y - 60) });
+          return;
+        }
+        if (!hand) {
+          useUi.getState().select([]);
+          useUi.getState().selectEdge(null);
+          if (ui.panel === "inspector" || ui.panel === "refine") useUi.getState().closePanel();
+        }
         startDrag("pan", e);
       }}
       className={cn(
-        "canvas-grid relative min-w-0 flex-1 overflow-hidden",
-        drag.current?.kind === "pan" ? "cursor-grabbing" : "cursor-default",
+        "relative min-w-0 flex-1 overflow-hidden",
+        ui.grid && "canvas-grid",
+        hand ? (drag.current?.kind === "pan" ? "cursor-grabbing" : "cursor-grab") : "cursor-default",
+        addTool && "cursor-crosshair",
       )}
     >
       <div
@@ -261,8 +323,28 @@ export function Canvas({
           geoms={geoms}
           selectedId={ui.selEdge}
           dimmed={focus ? focus.keepEdges : null}
-          onSelect={(id) => useUi.getState().selectEdge(id)}
+          onSelect={(id) => {
+            useUi.getState().selectEdge(id);
+            // 관계 라벨을 누르면 그 가지만 남기고 나머지는 회색으로 (집중하기)
+            const e = id ? doc.edges.find((x) => x.id === id) : null;
+            useUi.getState().setFocusView(e ? e.from : null);
+          }}
         />
+
+        {/* 끌고 있는 관계선 */}
+        {connecting && rects[connecting.from] && (
+          <svg className="pointer-events-none absolute top-0 left-0 overflow-visible" width={1} height={1}>
+            <line
+              x1={handleX(rects[connecting.from], connecting.side)}
+              y1={handleY(rects[connecting.from], connecting.side)}
+              x2={connecting.x}
+              y2={connecting.y}
+              stroke="#2563eb"
+              strokeWidth={1.5}
+              strokeDasharray="5 5"
+            />
+          </svg>
+        )}
 
         <AnimatePresence>
           {doc.nodes.map((n: ReasoningNode) => {
@@ -275,29 +357,50 @@ export function Canvas({
                 node={n}
                 x={p.x}
                 y={p.y}
+                collapsed={Boolean(p.collapsed)}
                 selected={selected}
                 multi={ui.sel.length > 1 && ui.sel.includes(n.id)}
                 hovered={ui.hover === n.id}
                 focused={ui.focusId === n.id}
                 dropTarget={ui.dropTarget === n.id}
+                connectTarget={connecting?.over === n.id}
                 dimmed={Boolean(focus && !focus.keep.has(n.id))}
                 source={doc.sources.find((s) => s.id === n.sourceId)}
                 showActions={(ui.hover === n.id || selected) && !ui.panel && ui.sel.length <= 1}
                 onMeasure={onMeasure}
                 onPointerDown={(e) => {
+                  if (hand) return;
                   e.stopPropagation();
                   startDrag("node", e, n.id);
                 }}
                 onClick={(e) => {
                   e.stopPropagation();
                   if (drag.current?.moved) return;
-                  if (e.shiftKey) useUi.getState().toggleSelect(n.id);
-                  else useUi.getState().select([n.id]);
+                  if (e.shiftKey) {
+                    useUi.getState().toggleSelect(n.id);
+                    return;
+                  }
+                  // 한 번 눌러도 바로 오른쪽에 뜬다
+                  useUi.getState().select([n.id]);
+                  onOpenNode(n.id);
                 }}
                 onOpen={() => onOpenNode(n.id)}
                 onHover={(v) => useUi.getState().setHover(v ? n.id : null)}
                 onFocus={(v) => useUi.getState().setFocus(v ? n.id : null)}
                 onAction={(i) => onNodeAction(n.id, i)}
+                onToggleCollapse={() => store().setCollapsed(pid, n.id, !p.collapsed)}
+                onStartConnect={(side, e) => {
+                  const r = rects[n.id];
+                  if (!r) return;
+                  (e.target as Element).setPointerCapture?.(e.pointerId);
+                  useUi.getState().setConnecting({
+                    from: n.id,
+                    side,
+                    x: handleX(r, side),
+                    y: handleY(r, side),
+                    over: null,
+                  });
+                }}
                 onSourceClick={() => {
                   if (n.sourceId) onSourceClick(n.sourceId, n.id);
                 }}
@@ -321,6 +424,7 @@ export function Canvas({
                 evidenceCount={doc.nodes.filter((n) => n.sourceId === s.id).length}
                 onMeasure={onMeasure}
                 onPointerDown={(e) => {
+                  if (hand) return;
                   e.stopPropagation();
                   startDrag("source", e, s.id);
                 }}
@@ -335,7 +439,6 @@ export function Canvas({
           })}
         </AnimatePresence>
 
-        {/* 첫 캔버스의 가벼운 제안 3+1개. 카드가 늘거나 패널이 열리면 사라진다 */}
         {showSuggest && anchor && (
           <motion.div
             initial={{ opacity: 0, y: 6 }}
@@ -369,7 +472,41 @@ export function Canvas({
         )}
       </div>
 
-      {/* 파일을 끌고 들어왔을 때. 어디에 놓으면 무엇이 되는지 먼저 말한다 */}
+      {/* 관계 종류 고르기 */}
+      {pendingEdge && (
+        <>
+          <div className="fixed inset-0 z-30" onPointerDown={() => setPendingEdge(null)} />
+          <div
+            style={{ left: pendingEdge.x, top: pendingEdge.y }}
+            className="fixed z-40 w-52 -translate-x-1/2 overflow-hidden rounded-[8px] border border-line bg-surface shadow-[0_8px_24px_rgba(24,24,27,.14)] animate-pop-in"
+          >
+            <div className="flex items-center gap-1.5 border-b border-line px-3 py-2 font-mono text-[11px] text-muted">
+              {pendingEdge.from} → {pendingEdge.to}
+            </div>
+            <div className="p-1">
+              {EDGE_OPTIONS.map((o) => (
+                <button
+                  key={o.value}
+                  type="button"
+                  onClick={() => {
+                    store().addEdge(pid, {
+                      from: pendingEdge.from,
+                      to: pendingEdge.to,
+                      type: o.value as EdgeType,
+                    });
+                    setPendingEdge(null);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-[6px] px-2 py-1.5 text-left text-[13px] hover:bg-wash"
+                >
+                  {o.value === "contradicts" && <span className="size-1.5 rounded-full bg-danger" />}
+                  {o.ko}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
       <AnimatePresence>
         {fileOver && !ui.dropTarget && (
           <motion.div
@@ -391,10 +528,19 @@ export function Canvas({
           className="absolute top-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2.5 rounded-[8px] border border-line bg-surface py-2 pr-2 pl-3.5 text-[13px] shadow-[0_4px_12px_rgba(24,24,27,.08)] animate-fade-up"
         >
           <span className="font-mono text-[12px] text-muted">{ui.focusView}</span>
-          <span>주변 추론만 보고 있어요. 배치는 그대로예요.</span>
+          <span>
+            {nodeMap.get(ui.focusView) ? KIND[kindOf(nodeMap.get(ui.focusView)!)].ko : "이 카드"} 주변만
+            보고 있어요. 배치는 그대로예요.
+          </span>
           <Btn size="sm" onClick={() => useUi.getState().setFocusView(null)}>
             전체 보기
           </Btn>
+        </div>
+      )}
+
+      {addTool && (
+        <div className="pointer-events-none absolute top-4 left-1/2 z-10 -translate-x-1/2 rounded-[6px] bg-ink px-3 py-1.5 text-[12px] text-white">
+          캔버스를 눌러 블록을 놓으세요 · Esc 로 취소
         </div>
       )}
 
@@ -405,4 +551,7 @@ export function Canvas({
   );
 }
 
-export { kindOf };
+const handleX = (r: Rect, side: Side) =>
+  side === "left" ? r.x : side === "right" ? r.x + r.w : r.x + r.w / 2;
+const handleY = (r: Rect, side: Side) =>
+  side === "top" ? r.y : side === "bottom" ? r.y + r.h : r.y + r.h / 2;

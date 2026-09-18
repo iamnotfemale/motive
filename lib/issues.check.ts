@@ -14,6 +14,8 @@ function makeDoc(): Doc {
     sources: [DEMO_SOURCE],
     placements: {},
     candidates: [],
+    undo: [],
+    redo: [],
     acknowledged: [],
     checks: {},
     changedAt: 0,

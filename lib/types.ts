@@ -96,6 +96,8 @@ export interface Source {
 export interface Placement {
   x: number;
   y: number;
+  /** 접으면 제목만 보인다. 기본은 펼침 — 카드가 내용을 다 보여준다. */
+  collapsed?: boolean;
 }
 
 export type EvidenceCandidateState = "pending" | "approved" | "excluded";

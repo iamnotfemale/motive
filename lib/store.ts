@@ -28,12 +28,21 @@ import {
   demoNodes,
 } from "./demo";
 
+/** 되돌리기 대상. 의미 그래프와 배치만 담는다 — 패널·선택은 화면 상태라 빠진다. */
+export interface Snapshot {
+  nodes: ReasoningNode[];
+  edges: SemanticEdge[];
+  placements: Record<string, Placement>;
+}
+
 export interface Doc {
   nodes: ReasoningNode[];
   edges: SemanticEdge[];
   sources: Source[];
   placements: Record<string, Placement>;
   candidates: EvidenceCandidate[];
+  undo: Snapshot[];
+  redo: Snapshot[];
   /** 알고도 수용하기로 한 어긋남. 사용자가 명시적으로 눌러야 들어간다 (스펙 §17.1). */
   acknowledged: string[];
   /** 인계 화면에서 사람이 직접 체크한 항목. */
@@ -75,6 +84,12 @@ interface DocState {
   acknowledgeConflict: (pid: string, key: string) => void;
   toggleCheck: (pid: string, key: string) => void;
   markGenerated: (pid: string) => void;
+
+  /** 구조가 바뀌기 직전에 부른다. 텍스트 편집은 담지 않는다. */
+  pushHistory: (pid: string) => void;
+  undoStep: (pid: string) => boolean;
+  redoStep: (pid: string) => boolean;
+  setCollapsed: (pid: string, id: string, collapsed: boolean) => void;
 }
 
 const now = () => new Date().toISOString();
@@ -85,11 +100,22 @@ const emptyDoc = (): Doc => ({
   sources: [],
   placements: {},
   candidates: [],
+  undo: [],
+  redo: [],
   acknowledged: [],
   checks: {},
   changedAt: Date.now(),
   genAt: 0,
 });
+
+const snapshotOf = (d: Doc): Snapshot => ({
+  nodes: d.nodes,
+  edges: d.edges,
+  placements: d.placements,
+});
+
+/** 한 번의 사용자 행동이 여러 변경을 부를 때 중간 스냅샷이 쌓이지 않게 막는다. */
+let suppressHistory = false;
 
 /** 제목이 길면 프로젝트 이름으로 앞부분만 쓴다. */
 function deriveName(statement: string) {
@@ -149,7 +175,7 @@ export const useDoc = create<DocState>()(
           doc.placements = {
             ...Object.fromEntries(doc.nodes.map((n) => [n.id, DEMO_POS[n.id] ?? { x: 72, y: 48 }])),
             // 자료도 캔버스 위에 아이콘으로 놓인다.
-            [DEMO_SOURCE.id]: { x: 1108, y: 48 },
+            [DEMO_SOURCE.id]: { x: 1148, y: 48 },
           };
           set((s) => ({
             projects: [
@@ -191,6 +217,7 @@ export const useDoc = create<DocState>()(
         },
 
         addNode: (pid, { kind, md, at, proposed, node }) => {
+          get().pushHistory(pid);
           const id = get().nextId(pid, kind);
           const ts = now();
           edit(pid, (d) => ({
@@ -211,7 +238,8 @@ export const useDoc = create<DocState>()(
         // 좌표만 바꾼다. 관계는 건드리지 않는다.
         moveNode: (pid, id, at) => edit(pid, (d) => ({ placements: { ...d.placements, [id]: at } })),
 
-        deleteNode: (pid, id) =>
+        deleteNode: (pid, id) => {
+          get().pushHistory(pid);
           edit(pid, (d) => {
             const placements = { ...d.placements };
             delete placements[id];
@@ -220,9 +248,11 @@ export const useDoc = create<DocState>()(
               edges: d.edges.filter((e) => e.from !== id && e.to !== id),
               placements,
             };
-          }),
+          });
+        },
 
         addEdge: (pid, e) => {
+          get().pushHistory(pid);
           const id = e.from + ">" + e.to + ":" + e.type;
           edit(pid, (d) => (d.edges.some((x) => x.id === id) ? {} : { edges: [...d.edges, { ...e, id }] }));
           return id;
@@ -231,7 +261,10 @@ export const useDoc = create<DocState>()(
         patchEdge: (pid, id, patch) =>
           edit(pid, (d) => ({ edges: d.edges.map((e) => (e.id === id ? { ...e, ...patch } : e)) })),
 
-        removeEdge: (pid, id) => edit(pid, (d) => ({ edges: d.edges.filter((e) => e.id !== id) })),
+        removeEdge: (pid, id) => {
+          get().pushHistory(pid);
+          edit(pid, (d) => ({ edges: d.edges.filter((e) => e.id !== id) }));
+        },
 
         addSource: (pid, s) => edit(pid, (d) => ({ sources: [...d.sources, s] })),
 
@@ -268,6 +301,8 @@ export const useDoc = create<DocState>()(
             "",
           ].join("\n");
 
+          get().pushHistory(pid);
+          suppressHistory = true;
           const evidenceId = get().addNode(pid, {
             kind: "evidence",
             md,
@@ -279,6 +314,7 @@ export const useDoc = create<DocState>()(
           });
           get().addEdge(pid, { from: evidenceId, to: c.targetId, type: c.edgeType });
           get().patchCandidate(pid, id, { state: "approved", approvedAs: evidenceId });
+          suppressHistory = false;
           return evidenceId;
         },
 
@@ -301,6 +337,69 @@ export const useDoc = create<DocState>()(
             if (!doc) return s;
             return { docs: { ...s.docs, [pid]: { ...doc, genAt: Date.now() } } };
           }),
+
+        pushHistory: (pid) =>
+          set((s) => {
+            const doc = s.docs[pid];
+            if (!doc || suppressHistory) return s;
+            return {
+              docs: {
+                ...s.docs,
+                [pid]: { ...doc, undo: [...doc.undo.slice(-49), snapshotOf(doc)], redo: [] },
+              },
+            };
+          }),
+
+        undoStep: (pid) => {
+          const doc = get().docs[pid];
+          if (!doc?.undo.length) return false;
+          const prev = doc.undo[doc.undo.length - 1];
+          set((s) => ({
+            docs: {
+              ...s.docs,
+              [pid]: {
+                ...doc,
+                ...prev,
+                undo: doc.undo.slice(0, -1),
+                redo: [...doc.redo, snapshotOf(doc)],
+                changedAt: Date.now(),
+              },
+            },
+          }));
+          return true;
+        },
+
+        redoStep: (pid) => {
+          const doc = get().docs[pid];
+          if (!doc?.redo.length) return false;
+          const next = doc.redo[doc.redo.length - 1];
+          set((s) => ({
+            docs: {
+              ...s.docs,
+              [pid]: {
+                ...doc,
+                ...next,
+                redo: doc.redo.slice(0, -1),
+                undo: [...doc.undo, snapshotOf(doc)],
+                changedAt: Date.now(),
+              },
+            },
+          }));
+          return true;
+        },
+
+        setCollapsed: (pid, id, collapsed) =>
+          set((s) => {
+            const doc = s.docs[pid];
+            const at = doc?.placements[id];
+            if (!doc || !at) return s;
+            return {
+              docs: {
+                ...s.docs,
+                [pid]: { ...doc, placements: { ...doc.placements, [id]: { ...at, collapsed } } },
+              },
+            };
+          }),
       };
     },
     { name: "motive.doc.v1", version: 1 },
@@ -310,17 +409,18 @@ export const useDoc = create<DocState>()(
 /** 겹치지 않는 자리를 찾는다. 기존 카드 배치를 흐트러뜨리지 않는다 (스펙 §12.2). */
 export function nextFreeSpot(doc: Doc, near: Placement): Placement {
   const taken = Object.values(doc.placements);
-  const hit = (p: Placement) => taken.some((t) => Math.abs(t.x - p.x) < 300 && Math.abs(t.y - p.y) < 180);
+  // 카드가 기본으로 펼쳐지므로 세로로 넉넉히 띄운다.
+  const hit = (p: Placement) => taken.some((t) => Math.abs(t.x - p.x) < 320 && Math.abs(t.y - p.y) < 320);
   const ring: Placement[] = [
-    { x: near.x, y: near.y + 220 },
-    { x: near.x + 344, y: near.y },
-    { x: near.x - 344, y: near.y },
-    { x: near.x + 344, y: near.y + 220 },
-    { x: near.x - 344, y: near.y + 220 },
-    { x: near.x, y: near.y + 440 },
+    { x: near.x, y: near.y + 400 },
+    { x: near.x + 364, y: near.y },
+    { x: near.x - 364, y: near.y },
+    { x: near.x + 364, y: near.y + 400 },
+    { x: near.x - 364, y: near.y + 400 },
+    { x: near.x, y: near.y + 800 },
   ];
   for (const p of ring) if (!hit(p) && p.x >= 0 && p.y >= 0) return p;
-  return { x: near.x + 344, y: near.y + 440 };
+  return { x: near.x + 364, y: near.y + 800 };
 }
 
 /* ── 조회 헬퍼 ── */

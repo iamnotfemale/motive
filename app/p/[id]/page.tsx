@@ -3,7 +3,8 @@
 /**
  * S02·S03 추론 워크스페이스.
  *
- * 보조 패널은 한 번에 하나만 연다. 상시 AI 채팅 칼럼을 만들지 않는다 (스펙 §30.5).
+ * 왼쪽은 레일 + 밀려나오는 패널, 오른쪽은 선택한 대상의 패널, 아래는 도구 막대.
+ * 상시 AI 채팅 칼럼을 만들지 않는다 (스펙 §30.5).
  */
 import { use, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -11,7 +12,8 @@ import { AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { Canvas } from "@/components/canvas/Canvas";
 import { SOURCE_W } from "@/components/canvas/SourceChip";
-import { ActionDock, ToolRail } from "@/components/ActionDock";
+import { Toolbar } from "@/components/Toolbar";
+import { LeftPanelView, LeftRail } from "@/components/LeftSide";
 import { WorkspaceHeader } from "@/components/WorkspaceHeader";
 import { Inspector } from "@/components/panels/Inspector";
 import { ReviewPanel } from "@/components/panels/ReviewPanel";
@@ -19,11 +21,11 @@ import { DecisionPanel } from "@/components/panels/DecisionPanel";
 import { ColdStartPanel } from "@/components/panels/ColdStartPanel";
 import { RefinePanel } from "@/components/panels/RefinePanel";
 import { IssuePanel } from "@/components/panels/IssuePanel";
-import { SourceShelf } from "@/components/panels/SourceShelf";
 import { CommandMenu } from "@/components/CommandMenu";
 import { extractFile } from "@/lib/extract";
 import { summarize } from "@/lib/issues";
 import { type Kind, kindOf } from "@/lib/labels";
+import { DEFAULT_PHASE, type ActionKey } from "@/lib/phases";
 import { nextFreeSpot, useDoc } from "@/lib/store";
 import { blankMd } from "@/lib/templates";
 import { flashSaved, useUi } from "@/lib/ui";
@@ -35,7 +37,6 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
 
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
-    // persist 가 localStorage 를 읽기 전에는 프로젝트가 없는 것처럼 보인다.
     const unsub = useDoc.persist.onFinishHydration(() => setHydrated(true));
     if (useDoc.persist.hasHydrated()) setHydrated(true);
     return unsub;
@@ -45,6 +46,7 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
   const doc = useDoc((s) => s.docs[pid]);
   const store = useDoc.getState;
   const ui = useUi();
+  const phase: Phase = ui.phase ?? DEFAULT_PHASE;
 
   const [issuePanel, setIssuePanel] = useState<"issues" | "conflicts" | null>(null);
 
@@ -55,46 +57,33 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
 
   useEffect(() => () => useUi.getState().reset(), [pid]);
 
-  /* ── 키보드 ── */
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      const typing = /^(INPUT|TEXTAREA)$/.test((e.target as HTMLElement)?.tagName ?? "");
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        useUi.getState().setCmdk(!useUi.getState().cmdk);
-        return;
-      }
-      if (e.key === "Escape" && !typing) {
-        useUi.getState().escape();
-        setIssuePanel(null);
-      }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
   /* ── 카드 만들기 ── */
   const addCard = useCallback(
-    (kind: Kind, opts?: { from?: string; edge?: "investigates" | "based_on" | "produces" }) => {
-      if (!doc) return;
-      const near = opts?.from ? doc.placements[opts.from] : undefined;
-      const at = nextFreeSpot(doc, near ?? { x: 72, y: 48 });
+    (
+      kind: Kind,
+      opts?: { from?: string; edge?: "investigates" | "based_on" | "produces"; at?: { x: number; y: number } },
+    ) => {
+      const d = useDoc.getState().docs[pid];
+      if (!d) return;
+      const at = opts?.at ?? nextFreeSpot(d, opts?.from ? (d.placements[opts.from] ?? { x: 72, y: 48 }) : { x: 72, y: 48 });
       const id = store().addNode(pid, { kind, md: blankMd(kind), at });
       if (opts?.from && opts.edge) store().addEdge(pid, { from: opts.from, to: id, type: opts.edge });
       useUi.getState().select([id]);
       useUi.getState().openPanel("inspector");
       useUi.getState().setInspTab("content");
+      useUi.getState().requestCenter(id);
       flashSaved();
       return id;
     },
-    [doc, pid, store],
+    [pid, store],
   );
 
-  /* ── 자료 올리기: 파일 → 캔버스 아이콘 ── */
+  /* ── 자료 올리기 ── */
   const addFiles = useCallback(
     async (files: File[], at?: { x: number; y: number }, targetId?: string) => {
-      if (!doc) return;
-      let spot = at ?? nextFreeSpot(doc, { x: 72, y: 48 });
+      const d = useDoc.getState().docs[pid];
+      if (!d) return;
+      let spot = at ?? nextFreeSpot(d, { x: 72, y: 48 });
       let failed = 0;
       let firstId: string | null = null;
 
@@ -131,7 +120,7 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
             : `${files.length}개 모두 읽지 못했어요.`,
           { description: "자료함에 남겨뒀어요. 텍스트를 직접 붙여넣을 수 있어요." },
         );
-        useUi.getState().openPanel("shelf");
+        useUi.getState().openLeft("sources");
         return;
       }
       if (failed > 0)
@@ -139,11 +128,9 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
           description: "읽은 자료는 그대로 쓸 수 있어요.",
         });
 
-      // 읽은 자료가 하나면 바로 검토로 이어준다. 드롭한 카드가 있으면 그 카드가 대상이다.
-      const readId = firstId;
-      if (readId && files.length === 1 && !failed) {
+      if (firstId && files.length === 1 && !failed) {
         useUi.getState().setReview({
-          sourceId: readId,
+          sourceId: firstId,
           step: targetId ? "consent" : "pick-target",
           targetId: targetId ?? null,
           pickedLine: null,
@@ -152,14 +139,82 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
         useUi.getState().openPanel("review");
       }
     },
-    [doc, pid, store],
+    [pid, store],
+  );
+
+  /* ── 단계별 행동 ── */
+  const runAction = useCallback(
+    (key: ActionKey) => {
+      const d = useDoc.getState().docs[pid];
+      if (!d) return;
+      const sel = useUi.getState().sel[0];
+      const node = sel ? d.nodes.find((n) => n.id === sel) : undefined;
+
+      switch (key) {
+        case "refine":
+          return useUi.getState().openPanel("refine");
+        case "coldstart":
+          return useUi.getState().openPanel("coldstart");
+        case "add-claim":
+          return void addCard("claim", { from: "P-01", edge: "investigates" });
+        case "add-question":
+          return void addCard("question", { from: node?.id ?? "P-01", edge: "investigates" });
+        case "add-solution":
+          return void addCard("solution");
+        case "add-requirement": {
+          const decision = node?.type === "decision" ? node : d.nodes.find((n) => n.type === "decision");
+          if (!decision) return toast("먼저 결정을 만들어주세요.");
+          useUi.getState().select([decision.id]);
+          return useUi.getState().openPanel("decision");
+        }
+        case "make-decision": {
+          const solution = node && kindOf(node) === "solution" ? node : d.nodes.find((n) => kindOf(n) === "solution");
+          if (!solution) return toast("먼저 해결안을 추가해주세요.");
+          useUi.getState().select([solution.id]);
+          return useUi.getState().openPanel("decision");
+        }
+        case "sources":
+        case "url":
+          return useUi.getState().openLeft("sources");
+        case "find-evidence": {
+          const ready = d.sources.find((s) => s.state === "read");
+          if (!ready) {
+            useUi.getState().openLeft("sources");
+            return toast("먼저 자료를 올려주세요.");
+          }
+          useUi.getState().setReview({
+            sourceId: ready.id,
+            step: "pick-target",
+            targetId: null,
+            pickedLine: null,
+            backTo: "candidates",
+          });
+          return useUi.getState().openPanel("review");
+        }
+        case "conflicts":
+          return setIssuePanel((v) => (v === "conflicts" ? null : "conflicts"));
+        case "issues":
+          return setIssuePanel((v) => (v === "issues" ? null : "issues"));
+        case "check-quotes": {
+          const unverified = d.nodes.find((n) => n.sourceLocator && !n.sourceLocator.verified);
+          if (!unverified) return toast("인용은 모두 원문과 대조됐어요.");
+          useUi.getState().select([unverified.id]);
+          useUi.getState().openPanel("inspector");
+          return useUi.getState().setInspTab("sources");
+        }
+        case "handoff":
+        case "export":
+          return router.push(`/p/${pid}/handoff`);
+      }
+    },
+    [pid, addCard, router],
   );
 
   /* ── 카드 액션 ── */
   const onNodeAction = useCallback(
     (id: string, index: 0 | 1) => {
-      if (!doc) return;
-      const node = doc.nodes.find((n) => n.id === id);
+      const d = useDoc.getState().docs[pid];
+      const node = d?.nodes.find((n) => n.id === id);
       if (!node) return;
       const kind = kindOf(node);
 
@@ -169,7 +224,7 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
         return;
       }
       if (kind === "claim") {
-        if (index === 0) useUi.getState().openPanel("shelf");
+        if (index === 0) useUi.getState().openLeft("sources");
         else addCard("question", { from: id, edge: "investigates" });
         return;
       }
@@ -194,7 +249,7 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
         if (index === 0) {
           useUi.getState().select([id]);
           useUi.getState().openPanel("decision");
-        } else useUi.getState().openPanel("shelf");
+        } else useUi.getState().openLeft("sources");
         return;
       }
       if (kind === "decision") {
@@ -208,8 +263,55 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
       useUi.getState().openPanel("inspector");
       useUi.getState().setInspTab(index === 1 ? "links" : "content");
     },
-    [doc, addCard, pid, router],
+    [pid, addCard, router],
   );
+
+  /* ── 키보드 ── */
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const el = e.target as HTMLElement | null;
+      const typing = /^(INPUT|TEXTAREA)$/.test(el?.tagName ?? "") || el?.isContentEditable;
+      const mod = e.metaKey || e.ctrlKey;
+
+      if (mod && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        useUi.getState().setCmdk(!useUi.getState().cmdk);
+        return;
+      }
+      if (mod && e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        const ok = e.shiftKey ? store().redoStep(pid) : store().undoStep(pid);
+        if (!ok) toast(e.shiftKey ? "다시 실행할 변경이 없어요" : "되돌릴 변경이 없어요");
+        return;
+      }
+      if (e.key === "Escape" && !typing) {
+        useUi.getState().escape();
+        setIssuePanel(null);
+        return;
+      }
+      if (typing) return;
+
+      if (e.key === "Delete" || e.key === "Backspace") {
+        const sel = useUi.getState().sel;
+        const d = useDoc.getState().docs[pid];
+        const nodes = sel.filter((id) => d?.nodes.some((n) => n.id === id));
+        if (!nodes.length) return;
+        e.preventDefault();
+        for (const id of nodes) store().deleteNode(pid, id);
+        useUi.getState().select([]);
+        useUi.getState().closePanel();
+        flashSaved();
+        toast(`${nodes.length}개 블록을 지웠어요`, { description: "⌘Z 로 되돌릴 수 있어요" });
+        return;
+      }
+
+      if (e.key === "v" || e.key === "V") useUi.getState().setTool("select");
+      if (e.key === "h" || e.key === "H") useUi.getState().setTool("hand");
+      if (e.key === "n" || e.key === "N") useUi.getState().setTool("add");
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [pid, store]);
 
   if (!hydrated) return <div className="p-10 text-[13px] text-muted">불러오는 중…</div>;
   if (!project || !doc)
@@ -226,7 +328,7 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
     <div className="flex h-screen flex-col overflow-hidden bg-canvas">
       <WorkspaceHeader
         project={project}
-        phase={ui.phase}
+        phase={phase}
         save={ui.save}
         aiOff={ui.aiOff}
         issues={issues}
@@ -240,6 +342,29 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
       />
 
       <div className="relative flex min-h-0 flex-1">
+        <LeftRail
+          phase={phase}
+          open={ui.leftPanel}
+          onOpen={(p) => useUi.getState().openLeft(p)}
+          onAction={runAction}
+        />
+
+        <AnimatePresence mode="wait">
+          {ui.leftPanel && (
+            <LeftPanelView
+              key={ui.leftPanel}
+              pid={pid}
+              panel={ui.leftPanel}
+              onFiles={(f) => void addFiles(f)}
+              onFocusNode={(id) => {
+                useUi.getState().select([id]);
+                useUi.getState().openPanel("inspector");
+                useUi.getState().requestCenter(id);
+              }}
+            />
+          )}
+        </AnimatePresence>
+
         <Canvas
           pid={pid}
           onOpenNode={(id) => {
@@ -250,7 +375,7 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
           onAddFromSuggestion={(what) => {
             if (what === "claim") addCard("claim", { from: "P-01", edge: "investigates" });
             else if (what === "question") addCard("question", { from: "P-01", edge: "investigates" });
-            else if (what === "source") useUi.getState().openPanel("shelf");
+            else if (what === "source") useUi.getState().openLeft("sources");
             else useUi.getState().openPanel("coldstart");
           }}
           onSourceClick={(sourceId, targetId) => {
@@ -265,26 +390,36 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
             useUi.getState().openPanel("review");
           }}
           onFilesDropped={(files, at, target) => void addFiles(files, at, target)}
+          onPlaceBlock={(at) => {
+            addCard("note", { at });
+            useUi.getState().setTool("select");
+          }}
         />
 
-        <ToolRail
-          shelfOpen={ui.panel === "shelf"}
-          onShelf={() => useUi.getState().openPanel(ui.panel === "shelf" ? null : "shelf")}
-          onSearch={() => useUi.getState().setCmdk(true)}
-          onAdd={() => addCard("note")}
-        />
-
-        <ActionDock
+        <Toolbar
+          tool={ui.tool}
           zoom={ui.zoom}
-          shelfOpen={ui.panel === "shelf"}
-          onAdd={(kind) => addCard(kind)}
-          onAttachFile={(files) => void addFiles(files)}
+          phase={phase}
+          grid={ui.grid}
+          canUndo={doc.undo.length > 0}
+          canRedo={doc.redo.length > 0}
+          onTool={(t) => useUi.getState().setTool(t)}
+          onGrid={(v) => useUi.getState().setGrid(v)}
+          onUndo={() => {
+            if (!store().undoStep(pid)) toast("되돌릴 변경이 없어요");
+          }}
+          onRedo={() => {
+            if (!store().redoStep(pid)) toast("다시 실행할 변경이 없어요");
+          }}
           onTidy={() => toast("정리는 다음 단계예요. 지금은 배치를 건드리지 않아요.")}
           onZoom={(z) => useUi.getState().setZoom(z)}
           onFit={() => {
             useUi.getState().setZoom(1);
             useUi.getState().setPan({ x: 0, y: 0 });
           }}
+          onAction={runAction}
+          onAddKind={(kind) => addCard(kind)}
+          onFiles={(f) => void addFiles(f)}
         />
 
         <AnimatePresence mode="wait">
@@ -294,8 +429,6 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
           {ui.panel === "coldstart" && <ColdStartPanel key="coldstart" pid={pid} />}
           {ui.panel === "refine" && <RefinePanel key="refine" pid={pid} />}
         </AnimatePresence>
-
-        {ui.panel === "shelf" && <SourceShelf pid={pid} onAttachFile={(f) => void addFiles(f)} />}
 
         {issuePanel && (
           <IssuePanel

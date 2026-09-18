@@ -7,7 +7,22 @@
 import { create } from "zustand";
 import type { Phase, SaveState } from "./types";
 
-export type Panel = "inspector" | "review" | "decision" | "refine" | "coldstart" | "shelf" | null;
+export type Panel = "inspector" | "review" | "decision" | "refine" | "coldstart" | null;
+
+/** 왼쪽에서 밀려나오는 패널. 아래에서 올라오는 서랍을 대신한다. */
+export type LeftPanel = "sources" | "search" | null;
+
+/** 캔버스 도구. 피그마와 같은 뜻으로 쓴다. */
+export type Tool = "select" | "hand" | "frame" | "add";
+
+/** 카드 테두리에서 끌어 만드는 관계. 놓을 때까지 그래프에 들어가지 않는다. */
+export interface Connecting {
+  from: string;
+  side: "top" | "right" | "bottom" | "left";
+  x: number;
+  y: number;
+  over: string | null;
+}
 export type InspectorTab = "content" | "links" | "sources";
 export type EditMode = "write" | "md";
 
@@ -64,6 +79,13 @@ interface UiState {
   dragging: boolean;
   /** AI 키 없음. 직접 작성과 내보내기는 계속 된다. */
   aiOff: boolean;
+  tool: Tool;
+  leftPanel: LeftPanel;
+  search: string;
+  connecting: Connecting | null;
+  grid: boolean;
+  /** 새 카드를 화면 가운데로 부드럽게 옮겨달라는 요청. */
+  center: { id: string; nonce: number } | null;
 
   select: (ids: string[]) => void;
   toggleSelect: (id: string) => void;
@@ -85,6 +107,12 @@ interface UiState {
   setDropTarget: (id: string | null) => void;
   setDragging: (v: boolean) => void;
   setAiOff: (v: boolean) => void;
+  setTool: (t: Tool) => void;
+  openLeft: (p: LeftPanel) => void;
+  setSearch: (q: string) => void;
+  setConnecting: (c: Connecting | null) => void;
+  setGrid: (v: boolean) => void;
+  requestCenter: (id: string) => void;
   /** Esc — 메뉴 → 관계 → 패널 → 선택 순서로 하나씩 푼다. */
   escape: () => void;
   reset: () => void;
@@ -108,6 +136,12 @@ const initial = {
   dropTarget: null,
   dragging: false,
   aiOff: false,
+  tool: "select" as Tool,
+  leftPanel: null as LeftPanel,
+  search: "",
+  connecting: null as Connecting | null,
+  grid: true,
+  center: null as { id: string; nonce: number } | null,
 };
 
 export const useUi = create<UiState>()((set, get) => ({
@@ -137,13 +171,22 @@ export const useUi = create<UiState>()((set, get) => ({
   setDropTarget: (dropTarget) => set({ dropTarget }),
   setDragging: (dragging) => set({ dragging }),
   setAiOff: (aiOff) => set({ aiOff }),
+  setTool: (tool) => set({ tool, connecting: null }),
+  openLeft: (leftPanel) => set({ leftPanel }),
+  setSearch: (search) => set({ search }),
+  setConnecting: (connecting) => set({ connecting }),
+  setGrid: (grid) => set({ grid }),
+  requestCenter: (id) => set({ center: { id, nonce: Date.now() } }),
 
   escape: () => {
     const s = get();
+    if (s.connecting) return set({ connecting: null });
     if (s.cmdk) return set({ cmdk: false });
+    if (s.tool !== "select") return set({ tool: "select" });
     if (s.focusView) return set({ focusView: null });
     if (s.selEdge) return set({ selEdge: null });
     if (s.panel) return set({ panel: null });
+    if (s.leftPanel) return set({ leftPanel: null });
     if (s.sel.length) return set({ sel: [] });
   },
 

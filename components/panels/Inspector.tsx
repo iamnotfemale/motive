@@ -6,22 +6,13 @@
  * 노드 본문은 md 문자열 하나가 유일한 소스다. 작성 모드는 `##` 섹션을 필드로 그릴 뿐,
  * 별도 문서를 만들지 않는다 (핸드오프 §7, 스펙 §13).
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef } from "react";
 import { toast } from "sonner";
-import { Badge, Btn, Dot, FieldLabel, Mono, Notice, TypeIcon } from "@/components/kit";
+import { Badge, Btn, Dot, Mono, Notice, TypeIcon } from "@/components/kit";
 import { SAVE } from "@/components/WorkspaceHeader";
 import { PanelClose, SidePanel } from "./Panel";
-import {
-  applyQuote,
-  parseList,
-  parseMd,
-  serializeList,
-  serializeMd,
-  setTitle,
-  stripQuote,
-  titleOf,
-  type ListItem,
-} from "@/lib/md";
+import { BlockEditor } from "@/components/BlockEditor";
+import { parseMd, setTitle, titleOf } from "@/lib/md";
 import { KIND, edgeLabel, kindOf } from "@/lib/labels";
 import { findNode, nodeTitle, useDoc } from "@/lib/store";
 import { flashSaved, useUi } from "@/lib/ui";
@@ -40,12 +31,9 @@ export function Inspector({ pid }: { pid: string }) {
   const id = ui.sel[0];
   const node = doc && id ? findNode(doc, id) : undefined;
 
-  const [focusSection, setFocusSection] = useState<string | null>(null);
   const mdRef = useRef<HTMLTextAreaElement>(null);
 
   const parsed = useMemo(() => (node ? parseMd(node.md) : null), [node]);
-
-  useEffect(() => setFocusSection(null), [id]);
 
   if (!doc || !node || !parsed) return null;
 
@@ -95,8 +83,10 @@ export function Inspector({ pid }: { pid: string }) {
         <textarea
           value={titleOf(node.md)}
           rows={2}
+          placeholder="제목을 입력하세요"
+          aria-label="카드 제목"
           onChange={(e) => write(setTitle(node.md, e.target.value))}
-          className="kr w-full resize-none border-0 bg-transparent p-0 text-[15px] leading-6 font-semibold text-ink"
+          className="kr field-sizing-content w-full resize-none border-0 bg-transparent p-0 text-[15px] leading-6 font-semibold text-ink placeholder:font-normal placeholder:text-faint"
         />
 
         <div className="-mx-5 flex gap-0.5 border-b border-line px-5">
@@ -143,98 +133,19 @@ export function Inspector({ pid }: { pid: string }) {
               </div>
               <span className="flex-1" />
               {ui.editMode === "write" && (
-                <Btn
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    const name = window.prompt("새 섹션 이름");
-                    if (!name?.trim()) return;
-                    write(
-                      serializeMd({
-                        ...parsed,
-                        sections: [...parsed.sections, { h: name.trim(), body: "", kind: "text" }],
-                      }),
-                    );
-                  }}
-                >
-                  + 섹션
-                </Btn>
+                <span className="text-[11px] text-faint">
+                  <span className="font-mono">/</span> 로 블록 고르기
+                </span>
               )}
             </div>
 
             {ui.editMode === "write" ? (
-              <>
-                {parsed.sections.length === 0 && (
-                  <div className="rounded-[6px] border border-dashed border-line p-4 text-center text-[13px] text-muted">
-                    아직 섹션이 없어요. `+ 섹션`으로 추가하거나 Markdown 탭에서 직접 쓸 수 있어요.
-                  </div>
-                )}
-
-                {parsed.sections.map((sec, i) => (
-                  <div key={sec.h + i} className="flex flex-col gap-1.5">
-                    <FieldLabel>{sec.h}</FieldLabel>
-
-                    {sec.kind === "text" && (
-                      <textarea
-                        value={sec.body}
-                        rows={Math.max(2, sec.body.split("\n").length)}
-                        onFocus={() => setFocusSection(sec.h)}
-                        onChange={(e) => {
-                          const sections = parsed.sections.map((s, n) =>
-                            n === i ? { ...s, body: e.target.value } : s,
-                          );
-                          write(serializeMd({ ...parsed, sections }));
-                        }}
-                        className="kr -mx-2.5 w-[calc(100%+20px)] resize-none rounded-[6px] border border-transparent bg-transparent px-2.5 py-2 text-[13px] leading-[22px] text-ink transition-[background,border-color] duration-[120ms] focus:border-line focus:bg-wash-2"
-                      />
-                    )}
-
-                    {sec.kind === "quote" && (
-                      <div className="flex gap-2 rounded-[6px] bg-wash px-3 py-2.5">
-                        <span className="shrink-0 font-serif text-[18px] leading-[22px] text-faint">“</span>
-                        <textarea
-                          value={stripQuote(sec.body)}
-                          rows={Math.max(1, sec.body.split("\n").length)}
-                          onFocus={() => setFocusSection(sec.h)}
-                          onChange={(e) => {
-                            const sections = parsed.sections.map((s, n) =>
-                              n === i ? { ...s, body: applyQuote(e.target.value) } : s,
-                            );
-                            write(serializeMd({ ...parsed, sections }));
-                          }}
-                          className="kr flex-1 resize-none border-0 bg-transparent p-0 text-[13px] leading-[22px] text-ink"
-                        />
-                      </div>
-                    )}
-
-                    {sec.kind === "list" && (
-                      <ListEditor
-                        items={parseList(sec.body)}
-                        onChange={(items) => {
-                          const sections = parsed.sections.map((s, n) =>
-                            n === i ? { ...s, body: serializeList(items) } : s,
-                          );
-                          write(serializeMd({ ...parsed, sections }));
-                        }}
-                        onFocus={() => setFocusSection(sec.h)}
-                      />
-                    )}
-                  </div>
-                ))}
-
-                {parsed.unsupported && (
-                  <Notice
-                    tone="warn"
-                    actions={
-                      <Btn size="sm" onClick={() => useUi.getState().setEditMode("md")}>
-                        Markdown 열기
-                      </Btn>
-                    }
-                  >
-                    작성 모드가 지원하지 않는 문법(표·HTML)이 있어요. 원문은 그대로 유지돼요.
-                  </Notice>
-                )}
-              </>
+              <BlockEditor
+                nodeId={node.id}
+                title={titleOf(node.md)}
+                md={node.md}
+                onChange={write}
+              />
             ) : (
               <div className="flex flex-col gap-2">
                 <textarea
@@ -246,13 +157,24 @@ export function Inspector({ pid }: { pid: string }) {
                   className="w-full resize-y rounded-[6px] border border-line bg-wash-2 px-3.5 py-3 font-mono text-[13px] leading-5 text-ink transition-[border-color,box-shadow] duration-[120ms] focus:border-brand focus:shadow-[0_0_0_3px_#f4f4f5]"
                 />
                 <p className="text-[12px] leading-4 text-muted">
-                  첫 <code className="font-mono">#</code> 줄이 카드 제목으로,{" "}
-                  <code className="font-mono">##</code> 섹션이 작성 모드의 항목으로 반영돼요. 미지원
-                  문법은 원문 그대로 유지돼요.
+                  첫 <code className="font-mono">#</code> 줄이 카드 제목이에요. 나머지는 작성 모드의
+                  블록과 그대로 대응해요.
                 </p>
               </div>
             )}
-            {focusSection && null}
+
+            {parsed.unsupported && (
+              <Notice
+                tone="warn"
+                actions={
+                  <Btn size="sm" onClick={() => useUi.getState().setEditMode("md")}>
+                    Markdown 열기
+                  </Btn>
+                }
+              >
+                작성 모드가 지원하지 않는 문법(표·HTML)이 있어요. 원문은 그대로 유지돼요.
+              </Notice>
+            )}
           </>
         )}
 
@@ -301,7 +223,7 @@ export function Inspector({ pid }: { pid: string }) {
                     <Dot tone="danger" />이 근거의 원본 자료를 찾을 수 없어요.
                   </div>
                   <div className="mt-1 flex gap-1.5">
-                    <Btn size="sm" onClick={() => useUi.getState().openPanel("shelf")}>
+                    <Btn size="sm" onClick={() => useUi.getState().openLeft("sources")}>
                       자료 다시 연결
                     </Btn>
                     <Btn variant="ghost" size="sm" onClick={() => toast("인계 문서에 상태로 남아요")}>
@@ -371,55 +293,5 @@ export function Inspector({ pid }: { pid: string }) {
         )}
       </div>
     </SidePanel>
-  );
-}
-
-function ListEditor({
-  items,
-  onChange,
-  onFocus,
-}: {
-  items: ListItem[];
-  onChange: (items: ListItem[]) => void;
-  onFocus: () => void;
-}) {
-  return (
-    <div className="flex flex-col gap-0.5">
-      {items.map((it, i) => (
-        <div key={i} className="flex items-start gap-2 py-1">
-          {it.checked === null ? (
-            <span className="mt-px w-4 shrink-0 text-center text-faint">•</span>
-          ) : (
-            <button
-              type="button"
-              onClick={() => onChange(items.map((x, n) => (n === i ? { ...x, checked: !x.checked } : x)))}
-              className={cn(
-                "mt-1 flex size-4 shrink-0 items-center justify-center rounded-[4px] border text-[10px] text-white",
-                it.checked ? "border-brand bg-brand" : "border-line bg-surface",
-              )}
-              aria-label={it.checked ? "완료 해제" : "완료"}
-            >
-              {it.checked ? "✓" : ""}
-            </button>
-          )}
-          <input
-            value={it.text}
-            onFocus={onFocus}
-            onChange={(e) => onChange(items.map((x, n) => (n === i ? { ...x, text: e.target.value } : x)))}
-            className={cn(
-              "flex-1 border-0 bg-transparent p-0 text-[13px] leading-[22px] text-ink",
-              it.checked && "text-muted line-through",
-            )}
-          />
-        </div>
-      ))}
-      <button
-        type="button"
-        onClick={() => onChange([...items, { text: "", checked: items[0]?.checked === null ? null : false }])}
-        className="h-7 rounded-[6px] px-1.5 text-left text-[13px] text-muted hover:bg-wash hover:text-ink"
-      >
-        + 항목 추가
-      </button>
-    </div>
   );
 }
