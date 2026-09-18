@@ -53,7 +53,7 @@ const A: Record<ActionKey, ActionDef> = {
   export: { key: "export", ko: "내보내기", icon: "Download" },
 };
 
-/** 아래 도구 막대 — 단계마다 두 개만. 누르면 그 블록만 남기고 나머지는 흐려진다. */
+/** 아래 도구 막대 — 단계마다 두 개만. 누르면 바로 실행된다(추가·열기). */
 export const DOCK_ACTIONS: Record<Phase, ActionDef[]> = {
   define: [A["add-claim"], A["add-note"]],
   explore: [A.attach, A["find-evidence"]],
@@ -63,17 +63,8 @@ export const DOCK_ACTIONS: Record<Phase, ActionDef[]> = {
 };
 
 /** 도구 막대에서 누를 때 무엇을 비추는지. 인계·내보내기는 화면을 옮기므로 빠진다. */
-export const SPOTLIGHT_KEYS: ActionKey[] = [
-  "add-claim",
-  "add-note",
-  "add-question",
-  "attach",
-  "find-evidence",
-  "conflicts",
-  "issues",
-  "add-solution",
-  "make-decision",
-];
+/** 도구 막대에서 비추기만 하는 단추. 나머지는 전부 실행이다. 반박·확인은 패널이 따로 열리므로 비춰서 위치를 보여준다. */
+export const SPOTLIGHT_KEYS: ActionKey[] = ["conflicts", "issues"];
 
 /** 왼쪽 레일의 단계별 항목. 자료함·검색 아래에 붙는다. */
 export const RAIL_ACTIONS: Record<Phase, ActionDef[]> = {

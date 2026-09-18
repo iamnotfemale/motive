@@ -167,7 +167,8 @@ export const EDGE_OPTIONS: { value: EdgeType; ko: string }[] = [
 ];
 
 /**
- * 캔버스에서 선을 그을 때 고르는 네 가지.
+ * 캔버스에서 선을 그을 때 고르는 선택지. 두 카드의 유형에 따라 달라진다 —
+ * 결정→해결안이면 채택·보류·기각, 결정→요구사항이면 구현 범위, 문제→가설이면 이 문제에서 출발.
  * `연결` 은 방향이 없는 단순 연결이라 화살촉을 그리지 않는다.
  */
 export interface EdgeChoice {
@@ -175,6 +176,11 @@ export interface EdgeChoice {
   ko: string;
   type: EdgeType;
   undirected?: boolean;
+  /** produces 의 갈래. 채택은 둘 다 없음. */
+  rejected?: boolean;
+  hold?: boolean;
+  /** 이 관계를 고르면 대상 카드의 상태를 이렇게 바꾼다 (해결안 채택·보류·기각). */
+  targetStatus?: NodeStatus;
   tone: "muted" | "ok" | "danger";
 }
 
@@ -185,8 +191,57 @@ export const EDGE_CHOICES: EdgeChoice[] = [
   { key: "link", ko: "연결", type: "related", undirected: true, tone: "muted" },
 ];
 
+/** 모든 관계 이름. 사용자가 선을 이을 때 어느 것이든 고를 수 있다. */
+export const ALL_EDGE_CHOICES: EdgeChoice[] = [
+  { key: "origin", ko: "이 문제에서 출발", type: "investigates", tone: "muted" },
+  { key: "challenge", ko: "검토 필요", type: "investigates", tone: "muted" },
+  { key: "supports", ko: "지지", type: "supports", tone: "ok" },
+  { key: "contradicts", ko: "반대 근거", type: "contradicts", tone: "danger" },
+  { key: "basis", ko: "제안의 근거", type: "based_on", tone: "ok" },
+  { key: "adopt", ko: "채택", type: "produces", targetStatus: "adopted", tone: "ok" },
+  { key: "hold", ko: "보류", type: "produces", hold: true, targetStatus: "held", tone: "muted" },
+  { key: "reject", ko: "기각", type: "produces", rejected: true, targetStatus: "rejected", tone: "danger" },
+  { key: "scope", ko: "구현 범위", type: "produces", tone: "ok" },
+  { key: "related", ko: "관련", type: "related", tone: "muted" },
+  { key: "link", ko: "연결", type: "related", undirected: true, tone: "muted" },
+];
+
+/**
+ * 두 카드 유형에 맞는 관계를 앞에 두고, 나머지도 전부 뒤에 붙인다.
+ * 제안 순서만 다르고 선택지는 항상 같다 — 사용자가 어떤 이름이든 쓸 수 있어야 한다.
+ */
+export function edgeChoicesFor(
+  from: Pick<ReasoningNode, "type" | "subtype">,
+  to: Pick<ReasoningNode, "type" | "subtype">,
+): EdgeChoice[] {
+  const a = kindOf(from);
+  const b = kindOf(to);
+  const first: string[] =
+    a === "decision" && b === "solution"
+      ? ["adopt", "hold", "reject"]
+      : a === "decision" && b === "requirement"
+        ? ["scope"]
+        : a === "problem" && b === "claim"
+          ? ["origin"]
+          : a === "question"
+            ? ["challenge"]
+            : a === "evidence" && (b === "solution" || b === "decision")
+              ? ["basis", "supports", "contradicts"]
+              : a === "evidence"
+                ? ["supports", "contradicts"]
+                : ["related", "link"];
+  return [
+    ...first.map((k) => ALL_EDGE_CHOICES.find((c) => c.key === k)!),
+    ...ALL_EDGE_CHOICES.filter((c) => !first.includes(c.key)),
+  ];
+}
+
 /** 지금 선이 어느 선택지인지. 선 도구 막대에서 현재 값을 표시할 때 쓴다. */
-export const choiceOf = (e: { type: EdgeType; undirected?: boolean }) =>
-  e.type === "related" && e.undirected
-    ? "link"
-    : EDGE_CHOICES.find((c) => c.type === e.type && !c.undirected)?.key ?? "related";
+export function choiceOf(e: Pick<SemanticEdge, "type" | "undirected" | "rejected" | "hold">, choices: EdgeChoice[] = ALL_EDGE_CHOICES) {
+  if (e.type === "related" && e.undirected) return "link";
+  return (
+    choices.find(
+      (c) => c.type === e.type && !c.undirected && Boolean(c.rejected) === Boolean(e.rejected) && Boolean(c.hold) === Boolean(e.hold),
+    )?.key ?? choices.find((c) => c.type === e.type && !c.undirected)?.key ?? "related"
+  );
+}

@@ -5,7 +5,7 @@
  * 카드를 누르면 오른쪽 패널이 자동으로 열리지 않는다 — 여기서 직접 연다.
  */
 import { motion } from "motion/react";
-import { ChevronsDownUp, ChevronsUpDown, FileText, GitFork, Sparkles, Target, Trash2 } from "lucide-react";
+import { ChevronsDownUp, ChevronsUpDown, FileText, GitFork, Target, Trash2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Props {
@@ -19,7 +19,6 @@ interface Props {
   onFocus: () => void;
   onCollapse: () => void;
   onDelete: () => void;
-  onAi: () => void;
   onFork: () => void;
 }
 
@@ -33,7 +32,6 @@ export function SelectionToolbar(p: Props) {
       go: p.onCollapse,
       danger: false,
     },
-    { icon: Sparkles, label: "AI에게 묻기", go: p.onAi, danger: false },
     ...(p.count > 1
       ? [{ icon: GitFork, label: "복제해 새 갈래 만들기", go: p.onFork, danger: false }]
       : []),

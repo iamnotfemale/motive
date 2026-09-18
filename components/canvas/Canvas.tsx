@@ -13,7 +13,7 @@ import { SelectionToolbar } from "./SelectionToolbar";
 import { EdgeLayer, anchorOf, layoutEdges, type Rect } from "./Edges";
 import { NODE_W, NodeView } from "./SemanticNode";
 import { SOURCE_W, SourceChip } from "./SourceChip";
-import { EDGE_CHOICES, KIND, choiceOf, kindOf } from "@/lib/labels";
+import { KIND, choiceOf, edgeChoicesFor, kindOf } from "@/lib/labels";
 import { tidyLayout } from "@/lib/tidy";
 import { useDoc } from "@/lib/store";
 import { useUi } from "@/lib/ui";
@@ -29,7 +29,6 @@ interface Props {
   onFilesDropped: (files: File[], at: { x: number; y: number }, targetId?: string) => void;
   onPlaceBlock: (at: { x: number; y: number }) => void;
   onDeleteSelected: () => void;
-  onAskAi: (ids: string[]) => void;
   onFork: () => void;
 }
 
@@ -84,7 +83,6 @@ export function Canvas({
   onFilesDropped,
   onPlaceBlock,
   onDeleteSelected,
-  onAskAi,
   onFork,
 }: Props) {
   const doc = useDoc((s) => s.docs[pid]);
@@ -732,7 +730,7 @@ export function Canvas({
                 selected={ui.sel.includes(s.id)}
                 hovered={ui.hover === s.id}
                 dragging={ui.dragging && drag.current?.id === s.id}
-                dimmed={Boolean(focus)}
+                dimmed={Boolean(focus && !focus.keep.has(s.id))}
                 evidenceCount={doc.nodes.filter((n) => n.sourceId === s.id).length}
                 onMeasure={onMeasure}
                 onPointerDown={(e) => {
@@ -801,7 +799,6 @@ export function Canvas({
             for (const id of selectedNodes) store().setCollapsed(pid, id, next);
           }}
           onDelete={onDeleteSelected}
-          onAi={() => onAskAi(selectedNodes)}
           onFork={onFork}
         />
       )}
@@ -812,13 +809,13 @@ export function Canvas({
           <div className="fixed inset-0 z-30" onPointerDown={() => setPendingEdge(null)} />
           <div
             style={{ left: pendingEdge.x, top: pendingEdge.y }}
-            className="fixed z-40 w-56 -translate-x-1/2 overflow-hidden rounded-[8px] border border-line bg-surface shadow-[0_8px_24px_rgba(24,24,27,.14)] animate-pop-in"
+            className="fixed z-40 w-60 -translate-x-1/2 overflow-hidden rounded-[8px] border border-line bg-surface shadow-[0_8px_24px_rgba(24,24,27,.14)] animate-pop-in"
           >
             <div className="flex items-center gap-1.5 border-b border-line px-3 py-2 font-mono text-[13px] text-muted">
               {pendingEdge.from} → {pendingEdge.to}
             </div>
-            <div className="p-1">
-              {EDGE_CHOICES.map((o) => (
+            <div className="max-h-[360px] overflow-auto p-1">
+              {edgeChoicesFor(nodeMap.get(pendingEdge.from)!, nodeMap.get(pendingEdge.to)!).map((o) => (
                 <button
                   key={o.key}
                   type="button"
@@ -828,9 +825,12 @@ export function Canvas({
                       to: pendingEdge.to,
                       type: o.type as EdgeType,
                       undirected: o.undirected,
+                      rejected: o.rejected,
+                      hold: o.hold,
                       fromSide: pendingEdge.fromSide,
                       toSide: pendingEdge.toSide,
                     });
+                    if (o.targetStatus && kindOf(nodeMap.get(pendingEdge.to)!) === "solution") store().patchNode(pid, pendingEdge.to, { status: o.targetStatus });
                     setPendingEdge(null);
                   }}
                   className="flex w-full items-center gap-2 rounded-[6px] px-2 py-1.5 text-left text-[15px] hover:bg-wash"
@@ -850,24 +850,28 @@ export function Canvas({
           data-ui="edgestyle"
           className="absolute bottom-28 left-1/2 z-20 flex w-max -translate-x-1/2 flex-col gap-1 rounded-[10px] border border-line bg-surface p-2 shadow-[0_6px_24px_rgba(24,24,27,.10)] animate-fade-up"
         >
-          <div className="flex items-center gap-1">
+          <div className="flex max-w-[720px] flex-wrap items-center gap-1">
             <span className="px-1.5 font-mono text-[13px] whitespace-nowrap text-muted">
               {selectedEdge.from} {selectedEdge.undirected ? "—" : "→"} {selectedEdge.to}
             </span>
             <span className="mx-0.5 h-5 w-px bg-line" />
-            {EDGE_CHOICES.map((o) => (
+            {edgeChoicesFor(nodeMap.get(selectedEdge.from) ?? { type: "note" }, nodeMap.get(selectedEdge.to) ?? { type: "note" }).map((o, _i, all) => (
               <button
                 key={o.key}
                 type="button"
-                onClick={() =>
+                onClick={() => {
                   store().patchEdge(pid, selectedEdge.id, {
                     type: o.type as EdgeType,
                     undirected: o.undirected ?? false,
-                  })
-                }
+                    rejected: o.rejected ?? false,
+                    hold: o.hold ?? false,
+                  });
+                  const tgt = nodeMap.get(selectedEdge.to);
+                  if (o.targetStatus && tgt && kindOf(tgt) === "solution") store().patchNode(pid, selectedEdge.to, { status: o.targetStatus });
+                }}
                 className={cn(
                   "flex h-7 items-center gap-1.5 rounded-[6px] px-2.5 text-[13px] font-medium whitespace-nowrap hover:bg-wash",
-                  choiceOf(selectedEdge) === o.key ? "bg-[#eff6ff] text-brand" : "text-muted",
+                  choiceOf(selectedEdge, all) === o.key ? "bg-[#eff6ff] text-brand" : "text-muted",
                 )}
               >
                 <EdgeDot tone={o.tone} />

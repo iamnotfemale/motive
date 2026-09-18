@@ -81,6 +81,13 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated, pid, project?.demo]);
 
+  useEffect(() => {
+    const sp = useUi.getState().spotlight;
+    if (!sp || !doc) return;
+    const fresh = spotlightFor(sp.key as ActionKey, doc);
+    if (fresh && fresh.ids.join() !== sp.ids.join()) useUi.getState().setSpotlight({ key: sp.key, ko: sp.ko, ids: fresh.ids });
+  }, [doc]);
+
   /* ── 카드 만들기 ── */
   const addCard = useCallback(
     (
@@ -482,13 +489,6 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
           }}
           onDeleteSelected={deleteSelected}
           onFork={forkSelection}
-          onAskAi={(ids) => {
-            useUi.getState().select(ids.slice(0, 1));
-            useUi.getState().openPanel("inspector");
-            toast("카드별 AI 액션은 다음 단계예요", {
-              description: "지금은 자료 검토와 콜드스타트에서만 AI를 부릅니다",
-            });
-          }}
         />
 
         <Toolbar
@@ -508,7 +508,10 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
           onZoom={(z) => useUi.getState().requestZoom(z)}
           hasSelection={ui.sel.length > 0}
           onFit={() => useUi.getState().requestFit()}
-          onAction={(key) => (SPOTLIGHT_KEYS.includes(key) ? spotlight(key) : runAction(key))}
+          onAction={(key) => {
+            if (SPOTLIGHT_KEYS.includes(key)) spotlight(key);
+            runAction(key);
+          }}
           spotlightKey={ui.spotlight?.key ?? null}
           onAddKind={(kind) => addCard(kind)}
         />

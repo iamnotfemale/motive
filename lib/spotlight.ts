@@ -48,6 +48,7 @@ export function spotlightFor(key: ActionKey, doc: Doc): Spotlight | null {
         ko: "자료",
         ids: [
           ...doc.sources.map((s) => s.id),
+          ...doc.sources.flatMap((s) => (s.attachedTo ? [s.attachedTo] : [])),
           ...nodes.filter((n) => n.sourceId).map((n) => n.id),
         ],
         empty: "아직 올린 자료가 없어요. 파일을 캔버스로 끌어다 놓으세요.",
