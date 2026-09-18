@@ -53,6 +53,8 @@ export interface NodeViewProps {
   onAction: (index: 0 | 1) => void;
   onSourceClick: () => void;
   onToggleCollapse: () => void;
+  /** 상태 배지를 눌렀을 때. 가설은 미검증↔검증됨, 검토 질문은 열림↔답함. 없으면 배지는 표시만. */
+  onToggleStatus?: () => void;
   onStartConnect: (side: Side, e: React.PointerEvent) => void;
 }
 
@@ -226,9 +228,18 @@ function NodeViewImpl(p: NodeViewProps) {
         {(status || sourceLabel) && (
           <div className="mt-3 flex flex-wrap items-center gap-2.5 text-[14px] leading-4 text-muted">
             {status && (
-              <span
+              <button
+                type="button"
+                disabled={!p.onToggleStatus}
+                title={p.onToggleStatus ? "눌러서 상태 바꾸기" : undefined}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  p.onToggleStatus?.();
+                }}
                 className={cn(
-                  "inline-flex items-center gap-1.5 font-medium",
+                  "inline-flex h-5 items-center gap-1.5 rounded-[5px] px-1 -mx-1 font-medium disabled:cursor-default",
+                  p.onToggleStatus && "hover:bg-wash",
                   status.tone === "warn" && "text-warn",
                   status.tone === "ok" && "text-ok",
                   status.tone === "danger" && "text-danger",
@@ -237,7 +248,7 @@ function NodeViewImpl(p: NodeViewProps) {
               >
                 <Dot tone={status.tone} />
                 {status.ko}
-              </span>
+              </button>
             )}
             {sourceLabel && (
               <button

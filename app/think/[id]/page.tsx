@@ -62,10 +62,10 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
 
   useEffect(() => () => useUi.getState().reset(), [pid]);
 
-  // 데모는 카드가 12장이라 25% 로 열어 전체 구조가 먼저 보이게 한다. 이후 확대는 사용자가.
+  // 데모는 카드가 12장이라 60% 로 열어 전체 구조가 먼저 보이게 한다. 이후 확대는 사용자가.
   useEffect(() => {
     if (!hydrated || !project?.demo || !doc) return;
-    const z = 0.25;
+    const z = 0.6;
     const spots = Object.values(doc.placements);
     const minX = Math.min(...spots.map((p) => p.x));
     const minY = Math.min(...spots.map((p) => p.y));

@@ -1,6 +1,8 @@
 /** 휴지통과 백업 왕복. `npm run check` 에 포함. */
 import assert from "node:assert/strict";
 import { useDoc } from "./store.ts";
+import { sectionBody, setSectionBody } from "./md.ts";
+import { blankMd } from "./templates.ts";
 
 const S = () => useDoc.getState();
 const pid = S().createProject("검사용 문제");
@@ -29,3 +31,15 @@ assert.equal(S().docs[pid]?.nodes.length, 2, "가져온 문서에 카드가 없�
 assert.deepEqual(S().docs[pid]?.undo, [], "되돌리기 이력은 백업에 들어가면 안 된다");
 
 console.log("store.check ok");
+
+// 가설 상태 전환: 미검증 → 검증됨 이 status 와 "검토 상태" 절에 함께 반영된다
+{
+  const p2 = S().createProject("상태 검사");
+  const hid = S().addNode(p2, { kind: "claim", md: blankMd("claim", "가설"), at: { x: 0, y: 0 }, node: { status: "unverified" } });
+  const n = S().docs[p2].nodes.find((x) => x.id === hid)!;
+  S().patchNode(p2, hid, { status: "verified", md: setSectionBody(n.md, "검토 상태", "검증됨") });
+  const after = S().docs[p2].nodes.find((x) => x.id === hid)!;
+  assert.equal(after.status, "verified");
+  assert.equal(sectionBody(after.md, "검토 상태").trim(), "검증됨");
+  console.log("status toggle ok");
+}

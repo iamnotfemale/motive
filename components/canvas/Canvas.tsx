@@ -13,11 +13,12 @@ import { SelectionToolbar } from "./SelectionToolbar";
 import { EdgeLayer, anchorOf, layoutEdges, type Rect } from "./Edges";
 import { NODE_W, NodeView } from "./SemanticNode";
 import { SOURCE_W, SourceChip } from "./SourceChip";
-import { KIND, choiceOf, edgeChoicesFor, kindOf } from "@/lib/labels";
+import { KIND, STATUS, choiceOf, edgeChoicesFor, kindOf } from "@/lib/labels";
+import { setSectionBody } from "@/lib/md";
 import { tidyLayout } from "@/lib/tidy";
 import { useDoc } from "@/lib/store";
 import { useUi } from "@/lib/ui";
-import type { EdgeType, ReasoningNode, Side } from "@/lib/types";
+import type { EdgeType, ReasoningNode, Side, NodeStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -37,6 +38,12 @@ type DragKind = "node" | "source" | "pan" | "marquee" | null;
 /** 매 렌더마다 새 배열을 만들지 않기 위한 빈 값. */
 
 /** 관계 선택지 앞의 점. 찬성은 초록, 반대는 빨강, 나머지는 회색. */
+/** 가설: 미검증↔검증됨, 검토 질문: 열림↔답함. 나머지 상태는 결정 패널이 정한다. */
+function toggledStatus(n: { type: string; status?: NodeStatus }): NodeStatus {
+  if (n.type === "claim") return n.status === "verified" ? "unverified" : "verified";
+  return n.status === "answered" ? "open" : "answered";
+}
+
 function EdgeDot({ tone }: { tone: "muted" | "ok" | "danger" }) {
   return (
     <span
@@ -708,6 +715,18 @@ export function Canvas({
                 onFocus={(v) => useUi.getState().setFocus(v ? n.id : null)}
                 onAction={(i) => onNodeAction(n.id, i)}
                 onToggleCollapse={() => store().setCollapsed(pid, n.id, !p.collapsed)}
+                onToggleStatus={
+                  n.type === "claim" || n.type === "question"
+                    ? () => {
+                        const next = toggledStatus(n);
+                        store().pushHistory(pid);
+                        store().patchNode(pid, n.id, {
+                          status: next,
+                          md: setSectionBody(n.md, n.type === "claim" ? "검토 상태" : "상태", STATUS[next].ko),
+                        });
+                      }
+                    : undefined
+                }
                 onStartConnect={(side, e) => {
                   const r = rects[n.id];
                   if (!r) return;
