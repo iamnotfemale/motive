@@ -28,6 +28,7 @@ import { summarize } from "@/lib/issues";
 import { type Kind, kindOf } from "@/lib/labels";
 import { DEFAULT_PHASE, SPOTLIGHT_KEYS, type ActionKey } from "@/lib/phases";
 import { spotlightFor } from "@/lib/spotlight";
+import { autoSummarize } from "@/lib/ai";
 import { nextFreeSpot, useDoc } from "@/lib/store";
 import { blankMd } from "@/lib/templates";
 import { flashSaved, useUi } from "@/lib/ui";
@@ -140,6 +141,7 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
           store().patchSource(pid, sid, { kind: out.kind, state: "no-text" });
         } else {
           store().patchSource(pid, sid, { kind: out.kind, text: out.text, state: "read" });
+          void autoSummarize(pid, { id: sid, name: file.name, text: out.text });
         }
       }
 

@@ -43,8 +43,8 @@ const evidenceOut = z.object({
 });
 
 const summary = z.object({
-  summary: z.string().describe("자료가 무엇을 담고 있는지 3~5문장"),
-  points: z.array(z.string()).max(5).describe("이 프로젝트와 맞닿을 수 있는 대목"),
+  summary: z.string().describe("자료가 무엇을 담고 있는지 1~2문장"),
+  points: z.array(z.string()).max(3).describe("이 프로젝트와 맞닿을 수 있는 대목, 각각 한 줄"),
   caveat: z.string().describe("이 요약만 보고 판단하면 안 되는 이유 한 줄"),
 });
 

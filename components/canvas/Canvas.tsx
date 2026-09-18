@@ -35,7 +35,6 @@ interface Props {
 type DragKind = "node" | "source" | "pan" | "marquee" | null;
 
 /** 매 렌더마다 새 배열을 만들지 않기 위한 빈 값. */
-const EMPTY_SOURCES: never[] = [];
 
 /** 관계 선택지 앞의 점. 찬성은 초록, 반대는 빨강, 나머지는 회색. */
 function EdgeDot({ tone }: { tone: "muted" | "ok" | "danger" }) {
@@ -133,9 +132,19 @@ export function Canvas({
       const p = doc.placements[n.id];
       if (p) out[n.id] = { x: p.x, y: p.y, w: NODE_W, h: heights[n.id] ?? 120 };
     }
+    // 카드에 붙은 자료는 그 카드 오른쪽에 위에서부터 줄 세운다. 카드가 움직이면 같이 간다.
+    const stack: Record<string, number> = {};
     for (const s of doc.sources) {
+      const host = s.attachedTo ? out[s.attachedTo] : undefined;
+      const h = heights[s.id] ?? 76;
+      if (host) {
+        const y = host.y + (stack[s.attachedTo!] ?? 0);
+        out[s.id] = { x: host.x + NODE_W + 28, y, w: SOURCE_W, h };
+        stack[s.attachedTo!] = (stack[s.attachedTo!] ?? 0) + h + 10;
+        continue;
+      }
       const p = doc.placements[s.id];
-      if (p) out[s.id] = { x: p.x, y: p.y, w: SOURCE_W, h: heights[s.id] ?? 76 };
+      if (p) out[s.id] = { x: p.x, y: p.y, w: SOURCE_W, h };
     }
     return out;
   }, [doc, heights]);
@@ -148,15 +157,6 @@ export function Canvas({
 
   const nodeMap = useMemo(() => new Map((doc?.nodes ?? []).map((n) => [n.id, n])), [doc]);
 
-  /** 카드별로 그 카드에 떨어뜨린 자료 묶음. */
-  const attachedBy = useMemo(() => {
-    const m = new Map<string, typeof doc.sources>();
-    for (const s of doc?.sources ?? []) {
-      if (!s.attachedTo) continue;
-      m.set(s.attachedTo, [...(m.get(s.attachedTo) ?? []), s]);
-    }
-    return m;
-  }, [doc]);
   const geoms = useMemo(() => (doc ? layoutEdges(doc.edges, rects, nodeMap) : []), [doc, rects, nodeMap]);
 
   /**
@@ -622,6 +622,23 @@ export function Canvas({
 
         {connecting && rects[connecting.from] && (
           <svg className="pointer-events-none absolute top-0 left-0 overflow-visible" width={1} height={1}>
+            {doc.sources.map((s) => {
+              const a = s.attachedTo ? rects[s.attachedTo] : undefined;
+              const b = rects[s.id];
+              if (!a || !b) return null;
+              return (
+                <line
+                  key={"att-" + s.id}
+                  x1={a.x + a.w}
+                  y1={b.y + Math.min(b.h, a.h) / 2}
+                  x2={b.x}
+                  y2={b.y + b.h / 2}
+                  stroke="#a1a1aa"
+                  strokeWidth={1.5}
+                  strokeDasharray="4 4"
+                />
+              );
+            })}
             <line
               x1={anchorOf(rects[connecting.from], connecting.side).x}
               y1={anchorOf(rects[connecting.from], connecting.side).y}
@@ -668,8 +685,6 @@ export function Canvas({
                 connecting={Boolean(connecting) && connecting!.from !== n.id}
                 dimmed={Boolean(focus && !focus.keep.has(n.id))}
                 source={doc.sources.find((s) => s.id === n.sourceId)}
-                attached={attachedBy.get(n.id) ?? EMPTY_SOURCES}
-                onOpenSource={(sid) => onSourceClick(sid, n.id)}
                 showActions={selected && !connecting}
                 onMeasure={onMeasure}
                 onPointerDown={(e) => {
@@ -719,7 +734,7 @@ export function Canvas({
           })}
 
           {doc.sources.map((s) => {
-            const p = doc.placements[s.id];
+            const p = rects[s.id];
             if (!p) return null;
             return (
               <SourceChip
@@ -727,6 +742,12 @@ export function Canvas({
                 source={s}
                 x={p.x}
                 y={p.y}
+                attached={Boolean(s.attachedTo && rects[s.attachedTo])}
+                onDetach={() => {
+                  // 끊으면 지금 자리에 그대로 남는다
+                  store().moveNode(pid, s.id, { x: p.x, y: p.y });
+                  store().patchSource(pid, s.id, { attachedTo: undefined });
+                }}
                 selected={ui.sel.includes(s.id)}
                 hovered={ui.hover === s.id}
                 dragging={ui.dragging && drag.current?.id === s.id}
@@ -738,7 +759,7 @@ export function Canvas({
                   e.stopPropagation();
                   e.preventDefault();
                   (e.currentTarget as HTMLElement).focus({ preventScroll: true });
-                  startDrag("source", e, s.id);
+                  if (!s.attachedTo) startDrag("source", e, s.id);
                 }}
                 onClick={(e) => {
                   if (hand) return;

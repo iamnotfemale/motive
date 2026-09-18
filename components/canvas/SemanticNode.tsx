@@ -8,7 +8,7 @@
  */
 import { memo, useEffect, useRef } from "react";
 import { motion } from "motion/react";
-import { ChevronDown, ChevronRight, Paperclip } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { Badge, Dot, Mono, TypeIcon } from "@/components/kit";
 import { previewLines } from "@/lib/blocks";
 import { KIND, STATUS, kindOf } from "@/lib/labels";
@@ -43,8 +43,6 @@ export interface NodeViewProps {
   dimmed: boolean;
   source?: Source;
   /** 이 카드에 떨어뜨린 자료들. 카드 아래에 목록으로 붙는다. */
-  attached: Source[];
-  onOpenSource: (id: string) => void;
   showActions: boolean;
   onMeasure: (id: string, h: number) => void;
   onPointerDown: (e: React.PointerEvent) => void;
@@ -224,31 +222,6 @@ function NodeViewImpl(p: NodeViewProps) {
           </div>
         )}
 
-        {p.attached.length > 0 && !p.collapsed && (
-          <div className="mt-3 flex flex-col gap-1 border-t border-wash pt-2.5">
-            <span className="text-[12px] leading-4 text-faint">첨부한 자료 {p.attached.length}</span>
-            {p.attached.map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  p.onOpenSource(s.id);
-                }}
-                className="flex items-center gap-2 rounded-[6px] border border-line bg-wash-2 px-2 py-1.5 text-left hover:bg-wash"
-              >
-                <Paperclip className="size-3.5 shrink-0 text-muted" />
-                <span className="min-w-0 flex-1 truncate font-mono text-[12px]" title={s.name}>
-                  {s.name}
-                </span>
-                <span className="shrink-0 text-[12px] text-muted">
-                  {s.state === "read" ? "열기" : "확인"}
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
 
         {(status || sourceLabel) && (
           <div className="mt-3 flex flex-wrap items-center gap-2.5 text-[14px] leading-4 text-muted">
@@ -358,7 +331,6 @@ export const NodeView = memo(NodeViewImpl, (a, b) => {
     a.connecting === b.connecting &&
     a.dimmed === b.dimmed &&
     a.source === b.source &&
-    a.attached === b.attached &&
     a.showActions === b.showActions
   );
 });

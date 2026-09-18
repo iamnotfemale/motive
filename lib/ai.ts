@@ -7,8 +7,8 @@
  */
 import { verifyQuote } from "./extract";
 import { kindOf, KIND } from "./labels";
-import { nodeTitle } from "./store";
-import type { EdgeType, EvidenceCandidate, ReasoningNode } from "./types";
+import { nodeTitle, useDoc } from "./store";
+import type { Source, EdgeType, EvidenceCandidate, ReasoningNode } from "./types";
 
 export type AiResult<T> = { ok: true; data: T } | { ok: false; aiOff: boolean; message: string };
 
@@ -37,6 +37,15 @@ export interface SourceSummary {
 /** 바로 읽기 어려운 자료를 훑어본다. 원문을 대신하지 않는다 — 근거는 여전히 인용에서 나온다. */
 export const summarizeSource = (name: string, text: string) =>
   call<SourceSummary>({ kind: "summarize", name, text });
+
+/** 올린 직후 짧은 요약을 미리 붙인다. 실패하면 조용히 넘어간다 — 요약은 원문을 대신하지 않는다. */
+export async function autoSummarize(pid: string, source: Pick<Source, "id" | "name" | "text">) {
+  if (!source.text.trim()) return;
+  const res = await summarizeSource(source.name, source.text);
+  if (!res.ok) return;
+  const md = [res.data.summary, "", ...res.data.points.map((p) => `- ${p}`)].join("\n").trim();
+  useDoc.getState().patchSource(pid, source.id, { summary: md });
+}
 
 export const refineProblem = (problem: string) =>
   call<{ statement: string; note: string }>({ kind: "refine", problem });

@@ -14,6 +14,7 @@ import { Badge, Btn, Dot, Spinner } from "@/components/kit";
 import { Icon } from "@/components/icon";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { extractUrl } from "@/lib/extract";
+import { autoSummarize } from "@/lib/ai";
 import { KIND, kindOf } from "@/lib/labels";
 import { RAIL_ACTIONS, type ActionKey } from "@/lib/phases";
 import { nextFreeSpot, nodeTitle, useDoc } from "@/lib/store";
@@ -183,6 +184,7 @@ function SourcesPanel({ pid, onFiles }: { pid: string; onFiles: (f: File[]) => v
       createdAt: new Date().toISOString(),
     });
     store().moveNode(pid, sid, nextFreeSpot(useDoc.getState().docs[pid]!, { x: 72, y: 48 }));
+    if (!out.problem) void autoSummarize(pid, { id: sid, name: value, text: out.text });
     setUrl("");
     flashSaved();
 

@@ -8,7 +8,7 @@
  */
 import { memo, useEffect, useRef } from "react";
 import { motion } from "motion/react";
-import { FileText, FileType2, ImageIcon, Link2, MessageSquareQuote } from "lucide-react";
+import { FileText, FileType2, ImageIcon, Link2, MessageSquareQuote, Unlink } from "lucide-react";
 import { Dot } from "@/components/kit";
 import type { Source, SourceState } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -41,6 +41,9 @@ interface Props {
   dragging: boolean;
   dimmed: boolean;
   evidenceCount: number;
+  /** 카드에 붙어 있다 — 자리가 카드에 묶여 있고 끌 수 없다. */
+  attached?: boolean;
+  onDetach?: () => void;
   onMeasure: (id: string, h: number) => void;
   onPointerDown: (e: React.PointerEvent) => void;
   onClick: (e: React.MouseEvent) => void;
@@ -84,7 +87,8 @@ export const SourceChip = memo(function SourceChip(p: Props) {
           }
         }}
         className={cn(
-          "flex cursor-grab flex-col gap-2 rounded-[8px] border bg-surface p-3 select-none transition-[border-color,box-shadow] duration-[120ms]",
+          "group/chip relative flex flex-col gap-2 rounded-[8px] border bg-surface p-3 select-none transition-[border-color,box-shadow] duration-[120ms]",
+          p.attached ? "cursor-pointer" : "cursor-grab",
           "focus-visible:outline-2 focus-visible:outline-brand focus-visible:outline-offset-2",
           p.dragging && "cursor-grabbing shadow-[0_8px_20px_rgba(24,24,27,.14)]",
           p.selected
@@ -111,6 +115,24 @@ export const SourceChip = memo(function SourceChip(p: Props) {
           <span className="flex-1" />
           {p.evidenceCount > 0 && <span>근거 {p.evidenceCount}</span>}
         </div>
+        {p.attached && p.onDetach && (
+          <button
+            type="button"
+            title="카드에서 떼기"
+            aria-label="카드에서 떼기"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              p.onDetach!();
+            }}
+            className={cn(
+              "absolute -top-2 -right-2 flex size-6 items-center justify-center rounded-full border border-line bg-surface text-muted shadow-sm hover:text-danger",
+              p.selected || p.hovered ? "opacity-100" : "opacity-0 group-hover/chip:opacity-100",
+            )}
+          >
+            <Unlink className="size-3" />
+          </button>
+        )}
       </div>
     </motion.div>
   );
