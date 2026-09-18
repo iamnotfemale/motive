@@ -95,7 +95,7 @@ export default function Handoff({ params }: { params: Promise<{ id: string }> })
         onIssues={() => {}}
         onConflicts={() => {}}
         onHandoff={() => {}}
-        onBack={() => router.push(`/p/${pid}`)}
+        onBack={() => router.push(`/think/${pid}`)}
       />
 
       <motion.div

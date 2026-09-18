@@ -1,4 +1,5 @@
 import { generateObject } from "ai";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { z } from "zod";
 
 /**
@@ -8,7 +9,13 @@ import { z } from "zod";
  * 키가 없으면 실패가 아니라 `aiOff` 로 답한다 — 직접 작성과 내보내기는 계속 돼야 한다.
  */
 
-const MODEL = process.env.MOTIVE_MODEL ?? "anthropic/claude-sonnet-5";
+const MODEL_ID = process.env.MOTIVE_MODEL ?? "anthropic/claude-sonnet-5";
+
+/** OpenRouter 키가 있으면 OpenRouter, 없으면 Vercel AI Gateway(문자열 모델 ID) 로 간다. */
+function model() {
+  const key = process.env.OPENROUTER_API_KEY;
+  return key ? createOpenRouter({ apiKey: key })(MODEL_ID) : MODEL_ID;
+}
 
 const coldStart = z.object({
   claims: z
@@ -57,7 +64,7 @@ const refine = z.object({
 });
 
 function hasKey() {
-  return Boolean(process.env.AI_GATEWAY_API_KEY || process.env.ANTHROPIC_API_KEY);
+  return Boolean(process.env.OPENROUTER_API_KEY || process.env.AI_GATEWAY_API_KEY || process.env.ANTHROPIC_API_KEY);
 }
 
 const GUARD = `너는 리서치 맥락을 구조화하는 도구의 일부다.
@@ -83,7 +90,7 @@ export async function POST(req: Request) {
       if (!problem.trim()) return Response.json({ error: "문제 진술이 비어 있어요." }, { status: 400 });
 
       const { object } = await generateObject({
-        model: MODEL,
+        model: model(),
         schema: coldStart,
         system: GUARD,
         prompt: `다음 문제 진술을 읽고 세 가지를 뽑아라.
@@ -111,7 +118,7 @@ ${problem}`,
         .join("\n");
 
       const { object } = await generateObject({
-        model: MODEL,
+        model: model(),
         schema: evidenceOut,
         system: GUARD,
         prompt: `아래는 줄 번호가 붙은 자료 원문이다. 현재 캔버스의 카드와 관련된 근거 후보를 찾아라.
@@ -137,7 +144,7 @@ ${numbered}`,
       if (!text.trim()) return Response.json({ error: "요약할 원문이 없어요." }, { status: 400 });
 
       const { object } = await generateObject({
-        model: MODEL,
+        model: model(),
         schema: summary,
         system: GUARD,
         prompt: `아래 자료를 읽고 무엇이 들어 있는지 알려줘라.
@@ -158,7 +165,7 @@ ${text}`,
     if (body.kind === "refine") {
       const problem = String(body.problem ?? "").slice(0, 4000);
       const { object } = await generateObject({
-        model: MODEL,
+        model: model(),
         schema: refine,
         system: GUARD,
         prompt: `다음 문제 진술을 한 문장으로 정리하라. 대상·상황·불편이 드러나야 한다.

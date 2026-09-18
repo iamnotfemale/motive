@@ -263,7 +263,7 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
         }
         case "handoff":
         case "export":
-          return router.push(`/p/${pid}/handoff`);
+          return router.push(`/think/${pid}/handoff`);
       }
     },
     [pid, addCard, router],
@@ -324,7 +324,7 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
         if (index === 0) {
           useUi.getState().select([id]);
           useUi.getState().openPanel("decision");
-        } else router.push(`/p/${pid}/handoff`);
+        } else router.push(`/think/${pid}/handoff`);
         return;
       }
       useUi.getState().select([id]);
@@ -379,7 +379,7 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3">
         <p className="text-[14px] text-muted">이 프로젝트를 찾을 수 없어요.</p>
-        <button onClick={() => router.push("/")} className="text-[14px] text-brand underline">
+        <button onClick={() => router.push("/dashboard")} className="text-[14px] text-brand underline">
           처음으로
         </button>
       </div>
@@ -398,8 +398,8 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
         onPhase={(p: Phase) => useUi.getState().setPhase(p)}
         onIssues={() => setIssuePanel(issuePanel === "issues" ? null : "issues")}
         onConflicts={() => setIssuePanel(issuePanel === "conflicts" ? null : "conflicts")}
-        onHandoff={() => router.push(`/p/${pid}/handoff`)}
-        onBack={() => router.push(`/p/${pid}`)}
+        onHandoff={() => router.push(`/think/${pid}/handoff`)}
+        onBack={() => router.push(`/think/${pid}`)}
       />
 
       <div className="relative flex min-h-0 flex-1">

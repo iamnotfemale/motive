@@ -53,7 +53,7 @@ export function WorkspaceHeader(p: Props) {
     <header className="relative z-20 flex h-13 shrink-0 items-center gap-2 border-b border-line bg-surface pr-6 pl-5">
       <button
         type="button"
-        onClick={() => router.push("/")}
+        onClick={() => router.push("/dashboard")}
         className="text-[14px] font-semibold tracking-[-0.01em] hover:text-muted"
       >
         Motive

@@ -53,7 +53,7 @@ export function CommandMenu({ pid, onAdd }: { pid: string; onAdd: (k: Kind) => v
           <CommandItem onSelect={() => run(() => useUi.getState().openLeft("sources"))}>
             자료함 열기
           </CommandItem>
-          <CommandItem onSelect={() => run(() => router.push(`/p/${pid}/handoff`))}>
+          <CommandItem onSelect={() => run(() => router.push(`/think/${pid}/handoff`))}>
             개발 인계
           </CommandItem>
         </CommandGroup>
