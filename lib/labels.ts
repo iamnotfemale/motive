@@ -136,7 +136,7 @@ export function edgeLabel(edge: SemanticEdge, target?: Pick<ReasoningNode, "type
     case "based_on":
       return "제안의 근거";
     case "related":
-      return "관련";
+      return edge.undirected ? "연결" : "관련";
     case "investigates":
       return target && kindOf(target) === "claim" && edge.from.startsWith("P") ? "이 문제에서 출발" : "검토 필요";
     case "produces":
@@ -158,9 +158,35 @@ export const PHASES = [
   { key: "handoff", ko: "인계" },
 ] as const;
 
+/** 근거를 붙일 때 고르는 관계. 대상이 정해진 상태라 극성이 핵심이다. */
 export const EDGE_OPTIONS: { value: EdgeType; ko: string }[] = [
-  { value: "supports", ko: "지지" },
-  { value: "contradicts", ko: "반대 근거" },
+  { value: "supports", ko: "근거 (찬성)" },
+  { value: "contradicts", ko: "근거 (반대)" },
   { value: "based_on", ko: "제안의 근거" },
   { value: "related", ko: "관련" },
 ];
+
+/**
+ * 캔버스에서 선을 그을 때 고르는 네 가지.
+ * `연결` 은 방향이 없는 단순 연결이라 화살촉을 그리지 않는다.
+ */
+export interface EdgeChoice {
+  key: string;
+  ko: string;
+  type: EdgeType;
+  undirected?: boolean;
+  tone: "muted" | "ok" | "danger";
+}
+
+export const EDGE_CHOICES: EdgeChoice[] = [
+  { key: "related", ko: "관련", type: "related", tone: "muted" },
+  { key: "supports", ko: "근거 (찬성)", type: "supports", tone: "ok" },
+  { key: "contradicts", ko: "근거 (반대)", type: "contradicts", tone: "danger" },
+  { key: "link", ko: "연결", type: "related", undirected: true, tone: "muted" },
+];
+
+/** 지금 선이 어느 선택지인지. 선 도구 막대에서 현재 값을 표시할 때 쓴다. */
+export const choiceOf = (e: { type: EdgeType; undirected?: boolean }) =>
+  e.type === "related" && e.undirected
+    ? "link"
+    : EDGE_CHOICES.find((c) => c.type === e.type && !c.undirected)?.key ?? "related";

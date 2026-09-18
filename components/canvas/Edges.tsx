@@ -65,7 +65,8 @@ export interface EdgeGeom {
   ly: number;
   arrow: string;
   label: string;
-  counter: boolean;
+  /** 라벨 앞에 붙는 점. 찬성은 초록, 반대는 빨강. */
+  dot: "ok" | "danger" | null;
 }
 
 const cubicAt = (
@@ -168,7 +169,7 @@ export function layoutEdges(
       ly: mid.y,
       arrow,
       label: edgeLabel(edge, nodes.get(edge.to)),
-      counter: edge.type === "contradicts",
+      dot: edge.type === "contradicts" ? "danger" : edge.type === "supports" ? "ok" : null,
     });
   }
 
@@ -216,7 +217,7 @@ export const EdgeLayer = memo(function EdgeLayer({
                 strokeDasharray={dash}
                 className="transition-[stroke] duration-[160ms]"
               />
-              <polygon points={g.arrow} fill={color} />
+              {!g.edge.undirected && <polygon points={g.arrow} fill={color} />}
               <path
                 d={g.path}
                 fill="none"
@@ -254,7 +255,11 @@ export const EdgeLayer = memo(function EdgeLayer({
                 : "border-line bg-surface text-muted hover:border-line-strong hover:text-ink",
             )}
           >
-            {g.counter && <span className="size-1.5 rounded-full bg-danger" />}
+            {g.dot && (
+              <span
+                className={cn("size-1.5 rounded-full", g.dot === "danger" ? "bg-danger" : "bg-[#147d4c]")}
+              />
+            )}
             {g.label}
           </button>
         );

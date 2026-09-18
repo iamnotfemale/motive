@@ -13,7 +13,7 @@ import { SelectionToolbar } from "./SelectionToolbar";
 import { EdgeLayer, anchorOf, layoutEdges, type Rect } from "./Edges";
 import { NODE_W, NodeView } from "./SemanticNode";
 import { SOURCE_W, SourceChip } from "./SourceChip";
-import { EDGE_OPTIONS, KIND, kindOf } from "@/lib/labels";
+import { EDGE_CHOICES, KIND, choiceOf, kindOf } from "@/lib/labels";
 import { useDoc } from "@/lib/store";
 import { useUi } from "@/lib/ui";
 import type { EdgeType, ReasoningNode, Side } from "@/lib/types";
@@ -36,6 +36,18 @@ type DragKind = "node" | "source" | "pan" | "marquee" | null;
 
 /** 매 렌더마다 새 배열을 만들지 않기 위한 빈 값. */
 const EMPTY_SOURCES: never[] = [];
+
+/** 관계 선택지 앞의 점. 찬성은 초록, 반대는 빨강, 나머지는 회색. */
+function EdgeDot({ tone }: { tone: "muted" | "ok" | "danger" }) {
+  return (
+    <span
+      className={cn(
+        "size-1.5 shrink-0 rounded-full",
+        tone === "danger" ? "bg-danger" : tone === "ok" ? "bg-[#147d4c]" : "bg-faint",
+      )}
+    />
+  );
+}
 
 /** 포인터에서 가장 가까운 변. 놓는 순간 그 변에 꽂힌다. */
 function nearestSide(r: Rect, x: number, y: number): Side {
@@ -134,17 +146,36 @@ export function Canvas({
   }, [doc]);
   const geoms = useMemo(() => (doc ? layoutEdges(doc.edges, rects, nodeMap) : []), [doc, rects, nodeMap]);
 
+  /**
+   * 집중 보기 — 고른 카드에서 뻗어 나가는 줄기를 통째로 남기고 나머지는 흐리게.
+   * 형제 가지(다른 가설과 그 아래)는 빠지고, 줄기에 붙은 근거·질문은 남는다.
+   */
   const focus = useMemo(() => {
     if (!ui.focusView || !doc) return null;
     const keep = new Set<string>([ui.focusView]);
-    const keepEdges = new Set<string>();
-    for (const e of doc.edges) {
-      if (e.from === ui.focusView || e.to === ui.focusView) {
-        keep.add(e.from);
-        keep.add(e.to);
-        keepEdges.add(e.id);
+
+    // 1) 방향을 따라 내려가며 모두 담는다
+    const queue = [ui.focusView];
+    while (queue.length) {
+      const id = queue.shift()!;
+      for (const e of doc.edges) {
+        if (e.from === id && !keep.has(e.to)) {
+          keep.add(e.to);
+          queue.push(e.to);
+        }
+        // 무방향 연결은 양쪽 다 줄기로 본다
+        if (e.undirected && e.to === id && !keep.has(e.from)) {
+          keep.add(e.from);
+          queue.push(e.from);
+        }
       }
     }
+
+    // 2) 줄기에 붙은 근거·질문은 한 홉까지 같이 남긴다
+    const stem = new Set(keep);
+    for (const e of doc.edges) if (stem.has(e.to)) keep.add(e.from);
+
+    const keepEdges = new Set<string>();
     for (const e of doc.edges) if (keep.has(e.from) && keep.has(e.to)) keepEdges.add(e.id);
     return { keep, keepEdges };
   }, [ui.focusView, doc]);
@@ -173,11 +204,18 @@ export function Canvas({
     viewAnim.current = requestAnimationFrame(step);
   }, []);
 
+  /**
+   * 아래 세 effect 는 요청 번호가 바뀔 때만 돈다.
+   * doc·rects 를 의존성에 넣으면 카드를 끄는 내내 다시 실행돼 화면이 튄다.
+   */
+  const handled = useRef({ center: 0, fit: 0, zoom: 0 });
+
   /* 확대·축소 단추 — 화면 가운데를 기준으로 부드럽게 */
   useEffect(() => {
     const req = ui.zoomTo;
     const vp = vpRef.current;
-    if (!req || !vp) return;
+    if (!req || !vp || handled.current.zoom === req.nonce) return;
+    handled.current.zoom = req.nonce;
     const { pan, zoom } = useUi.getState();
     const z = Math.min(2, Math.max(0.3, req.z));
     const cx = vp.clientWidth / 2;
@@ -188,17 +226,17 @@ export function Canvas({
     });
   }, [ui.zoomTo, animateView]);
 
-  /* ── 새 카드가 생겼을 때만 화면 가운데로. 클릭·드래그로는 움직이지 않는다 ── */
-  const centerAnim = useRef<number | null>(null);
+  /* ── 카드를 새로 만들었을 때만 화면 가운데로. 클릭·드래그로는 움직이지 않는다 ── */
   useEffect(() => {
     const req = ui.center;
-    if (!req || !doc) return;
-    const at = doc.placements[req.id];
     const vp = vpRef.current;
-    if (!at || !vp) return;
+    if (!req || !vp || handled.current.center === req.nonce) return;
+    handled.current.center = req.nonce;
 
+    const at = docRef.current?.placements[req.id];
+    if (!at) return;
     const zoom = useUi.getState().zoom;
-    const h = heights[req.id] ?? 140;
+    const h = rectsRef.current[req.id]?.h ?? 140;
     animateView({
       zoom,
       pan: {
@@ -206,23 +244,22 @@ export function Canvas({
         y: vp.clientHeight / 2 - (at.y + h / 2) * zoom,
       },
     });
-    return () => {
-      if (centerAnim.current) cancelAnimationFrame(centerAnim.current);
-    };
-  }, [ui.center, doc, heights, animateView]);
+  }, [ui.center, animateView]);
 
   /* ── 화면 맞춤 — 고른 카드가 있으면 그 카드만 크게 ── */
   useEffect(() => {
-    if (!ui.fit || !doc) return;
     const vp = vpRef.current;
-    if (!vp) return;
-    const ids = useUi.getState().sel.filter((id) => rects[id]);
-    const targets = ids.length ? ids : Object.keys(rects);
+    if (!ui.fit || !vp || handled.current.fit === ui.fit) return;
+    handled.current.fit = ui.fit;
+
+    const all = rectsRef.current;
+    const ids = useUi.getState().sel.filter((id) => all[id]);
+    const targets = ids.length ? ids : Object.keys(all);
     if (!targets.length) return;
 
     const box = targets.reduce(
       (acc, id) => {
-        const r = rects[id];
+        const r = all[id];
         return {
           x0: Math.min(acc.x0, r.x),
           y0: Math.min(acc.y0, r.y),
@@ -245,7 +282,7 @@ export function Canvas({
         y: vp.clientHeight / 2 - ((box.y0 + box.y1) / 2) * zoom,
       },
     });
-  }, [ui.fit, doc, rects, animateView]);
+  }, [ui.fit, animateView]);
 
   /* ── 포인터 드래그 ── */
   function startDrag(kind: Exclude<DragKind, null>, e: React.PointerEvent, id?: string) {
@@ -536,8 +573,9 @@ export function Canvas({
           dimmed={focus ? focus.keepEdges : null}
           onSelect={(id) => {
             useUi.getState().selectEdge(id);
+            // 화살표가 가리키는 쪽부터 아래로 집중한다
             const e = id ? doc.edges.find((x) => x.id === id) : null;
-            useUi.getState().setFocusView(e ? e.from : null);
+            useUi.getState().setFocusView(e ? e.to : null);
           }}
         />
 
@@ -737,15 +775,16 @@ export function Canvas({
               {pendingEdge.from} → {pendingEdge.to}
             </div>
             <div className="p-1">
-              {EDGE_OPTIONS.map((o) => (
+              {EDGE_CHOICES.map((o) => (
                 <button
-                  key={o.value}
+                  key={o.key}
                   type="button"
                   onClick={() => {
                     store().addEdge(pid, {
                       from: pendingEdge.from,
                       to: pendingEdge.to,
-                      type: o.value as EdgeType,
+                      type: o.type as EdgeType,
+                      undirected: o.undirected,
                       fromSide: pendingEdge.fromSide,
                       toSide: pendingEdge.toSide,
                     });
@@ -753,7 +792,7 @@ export function Canvas({
                   }}
                   className="flex w-full items-center gap-2 rounded-[6px] px-2 py-1.5 text-left text-[15px] hover:bg-wash"
                 >
-                  {o.value === "contradicts" && <span className="size-1.5 rounded-full bg-danger" />}
+                  <EdgeDot tone={o.tone} />
                   {o.ko}
                 </button>
               ))}
@@ -762,57 +801,82 @@ export function Canvas({
         </>
       )}
 
-      {/* 선을 고르면 모양을 바꿀 수 있다 */}
+      {/* 선을 고르면 관계와 모양을 바꿀 수 있다 */}
       {selectedEdge && (
         <div
           data-ui="edgestyle"
-          className="absolute bottom-24 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1 rounded-[10px] border border-line bg-surface p-1.5 shadow-[0_6px_24px_rgba(24,24,27,.10)] animate-fade-up"
+          className="absolute bottom-28 left-1/2 z-20 flex w-max -translate-x-1/2 flex-col gap-1 rounded-[10px] border border-line bg-surface p-2 shadow-[0_6px_24px_rgba(24,24,27,.10)] animate-fade-up"
         >
-          <span className="px-2 font-mono text-[13px] text-muted">
-            {selectedEdge.from} → {selectedEdge.to}
-          </span>
-          <span className="mx-0.5 h-5 w-px bg-line" />
-          {(
-            [
-              ["curve", "곡선"],
-              ["straight", "직선"],
-              ["elbow", "꺾은선"],
-            ] as const
-          ).map(([shape, ko]) => (
+          <div className="flex items-center gap-1">
+            <span className="px-1.5 font-mono text-[13px] whitespace-nowrap text-muted">
+              {selectedEdge.from} {selectedEdge.undirected ? "—" : "→"} {selectedEdge.to}
+            </span>
+            <span className="mx-0.5 h-5 w-px bg-line" />
+            {EDGE_CHOICES.map((o) => (
+              <button
+                key={o.key}
+                type="button"
+                onClick={() =>
+                  store().patchEdge(pid, selectedEdge.id, {
+                    type: o.type as EdgeType,
+                    undirected: o.undirected ?? false,
+                  })
+                }
+                className={cn(
+                  "flex h-7 items-center gap-1.5 rounded-[6px] px-2.5 text-[13px] font-medium whitespace-nowrap hover:bg-wash",
+                  choiceOf(selectedEdge) === o.key ? "bg-[#eff6ff] text-brand" : "text-muted",
+                )}
+              >
+                <EdgeDot tone={o.tone} />
+                {o.ko}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-1 border-t border-line pt-1">
+            <span className="px-1.5 text-[13px] whitespace-nowrap text-faint">선 모양</span>
+            {(
+              [
+                ["curve", "곡선"],
+                ["straight", "직선"],
+                ["elbow", "꺾은선"],
+              ] as const
+            ).map(([shape, ko]) => (
+              <button
+                key={shape}
+                type="button"
+                onClick={() => store().patchEdge(pid, selectedEdge.id, { shape })}
+                className={cn(
+                  "h-7 rounded-[6px] px-2.5 text-[13px] font-medium whitespace-nowrap hover:bg-wash",
+                  (selectedEdge.shape ?? "curve") === shape ? "bg-[#eff6ff] text-brand" : "text-muted",
+                )}
+              >
+                {ko}
+              </button>
+            ))}
             <button
-              key={shape}
               type="button"
-              onClick={() => store().patchEdge(pid, selectedEdge.id, { shape })}
+              onClick={() => store().patchEdge(pid, selectedEdge.id, { dashed: !selectedEdge.dashed })}
               className={cn(
-                "h-7 rounded-[6px] px-2.5 text-[14px] font-medium hover:bg-wash",
-                (selectedEdge.shape ?? "curve") === shape ? "bg-[#eff6ff] text-brand" : "text-muted",
+                "h-7 rounded-[6px] px-2.5 text-[13px] font-medium whitespace-nowrap hover:bg-wash",
+                selectedEdge.dashed ? "bg-[#eff6ff] text-brand" : "text-muted",
               )}
             >
-              {ko}
+              점선
             </button>
-          ))}
-          <span className="mx-0.5 h-5 w-px bg-line" />
-          <button
-            type="button"
-            onClick={() => store().patchEdge(pid, selectedEdge.id, { dashed: !selectedEdge.dashed })}
-            className={cn(
-              "h-7 rounded-[6px] px-2.5 text-[14px] font-medium hover:bg-wash",
-              selectedEdge.dashed ? "bg-[#eff6ff] text-brand" : "text-muted",
-            )}
-          >
-            점선
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              store().removeEdge(pid, selectedEdge.id);
-              useUi.getState().selectEdge(null);
-              useUi.getState().setFocusView(null);
-            }}
-            className="h-7 rounded-[6px] px-2.5 text-[14px] font-medium text-danger hover:bg-wash"
-          >
-            관계 지우기
-          </button>
+            <span className="flex-1" />
+            <button
+              type="button"
+              onClick={() => {
+                store().removeEdge(pid, selectedEdge.id);
+                useUi.getState().selectEdge(null);
+                useUi.getState().setFocusView(null);
+              }}
+              className="h-7 rounded-[6px] px-2.5 text-[13px] font-medium whitespace-nowrap text-danger hover:bg-wash"
+            >
+              관계 지우기
+            </button>
+          </div>
         </div>
       )}
 

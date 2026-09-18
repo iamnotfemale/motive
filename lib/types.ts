@@ -79,6 +79,8 @@ export interface SemanticEdge {
   /** 선 모양. 의미가 아니라 보기 설정이다. */
   shape?: "curve" | "straight" | "elbow";
   dashed?: boolean;
+  /** 방향 없는 단순 연결. 화살촉을 그리지 않는다. */
+  undirected?: boolean;
   /** produces 전용. 기각/보류를 내부에서 분리 (BUILD_PLAN §1.5). */
   rejected?: boolean;
   hold?: boolean;
