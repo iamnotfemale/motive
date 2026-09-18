@@ -7,7 +7,7 @@
 import { create } from "zustand";
 import type { Phase, SaveState } from "./types";
 
-export type Panel = "inspector" | "review" | "decision" | "refine" | "shelf" | null;
+export type Panel = "inspector" | "review" | "decision" | "refine" | "coldstart" | "shelf" | null;
 export type InspectorTab = "content" | "links" | "sources";
 export type EditMode = "write" | "md";
 

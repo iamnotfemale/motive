@@ -263,6 +263,13 @@ function projectContext(c: Ctx): string {
     "",
     "## What to verify before changing direction",
     bullets([
+      // 콜드스타트에서 남긴 "생각을 바꿀 조건" 은 문제 카드에 붙는다.
+      ...(c.problem
+        ? section(c.problem, "생각을 바꿀 조건")
+            .split("\n")
+            .map((l) => l.replace(/^- /, "").trim())
+            .filter(Boolean)
+        : []),
       ...c.unsupportedClaims.map((n) => `${n.id} 은 지지 근거가 없습니다.`),
       ...c.questions.map((q) => `${q.id} 은 아직 답이 없습니다.`),
     ]),

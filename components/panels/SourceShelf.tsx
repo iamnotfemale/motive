@@ -4,13 +4,14 @@
  * CMP-08 자료함. 상시 문서 트리가 아니다 — 필요할 때만 열리는 하단 서랍이다 (스펙 §19 C).
  * 자료는 Source 지 Evidence 가 아니다. 여기서 바로 근거가 만들어지지 않는다.
  */
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { motion } from "motion/react";
 import { toast } from "sonner";
-import { Badge, Btn, Dot } from "@/components/kit";
+import { Badge, Btn, Dot, Spinner } from "@/components/kit";
 import { PanelClose } from "./Panel";
-import { useDoc } from "@/lib/store";
-import { useUi } from "@/lib/ui";
+import { extractUrl } from "@/lib/extract";
+import { nextFreeSpot, useDoc } from "@/lib/store";
+import { flashSaved, useUi } from "@/lib/ui";
 import type { SourceState } from "@/lib/types";
 
 const STATE: Record<SourceState, { ko: string; tone: "ok" | "warn" | "muted" | "danger" }> = {
@@ -23,7 +24,46 @@ const STATE: Record<SourceState, { ko: string; tone: "ok" | "warn" | "muted" | "
 
 export function SourceShelf({ pid, onAttachFile }: { pid: string; onAttachFile: (f: File[]) => void }) {
   const doc = useDoc((s) => s.docs[pid]);
+  const store = useDoc.getState;
   const fileRef = useRef<HTMLInputElement>(null);
+  const [url, setUrl] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function addUrl() {
+    const value = url.trim();
+    if (!value || !doc) return;
+    setLoading(true);
+    const out = await extractUrl(value);
+    setLoading(false);
+
+    const sid = "src-" + Math.random().toString(36).slice(2, 9);
+    store().addSource(pid, {
+      id: sid,
+      kind: "url",
+      name: value.replace(/^https?:\/\//, "").slice(0, 60),
+      text: out.text,
+      uri: value,
+      state: out.problem ? "no-text" : "read",
+      createdAt: new Date().toISOString(),
+    });
+    store().moveNode(pid, sid, nextFreeSpot(useDoc.getState().docs[pid]!, { x: 72, y: 48 }));
+    setUrl("");
+    flashSaved();
+
+    if (out.problem) {
+      toast.warning(out.problem, { description: "자료함에는 남겨뒀어요." });
+      return;
+    }
+    useUi.getState().setReview({
+      sourceId: sid,
+      step: "pick-target",
+      targetId: null,
+      pickedLine: null,
+      backTo: "candidates",
+    });
+    useUi.getState().openPanel("review");
+  }
+
   if (!doc) return null;
 
   const broken = doc.sources.filter((s) => s.state === "no-text" || s.state === "failed");
@@ -41,8 +81,22 @@ export function SourceShelf({ pid, onAttachFile }: { pid: string; onAttachFile: 
         <span className="font-semibold">자료함</span>
         <span className="text-[12px] text-muted">{doc.sources.length}</span>
         <span className="flex-1" />
+        <input
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") void addUrl();
+          }}
+          placeholder="주소 붙여넣기"
+          aria-label="자료 주소"
+          className="h-7 w-52 rounded-[6px] border border-line bg-surface px-2.5 text-[13px] focus:border-brand"
+        />
+        <Btn size="sm" onClick={() => void addUrl()} disabled={!url.trim() || loading}>
+          {loading && <Spinner className="border-ink/30 border-t-ink" />}
+          주소 읽기
+        </Btn>
         <Btn size="sm" onClick={() => fileRef.current?.click()}>
-          + 자료 첨부
+          + 파일
         </Btn>
         <PanelClose onClose={() => useUi.getState().closePanel()} label="닫기" />
       </div>

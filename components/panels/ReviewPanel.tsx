@@ -175,6 +175,7 @@ export function ReviewPanel({ pid }: { pid: string }) {
                   <button
                     key={n.id}
                     type="button"
+                    aria-label={`${KIND[kindOf(n)].ko} ${n.id} ${nodeTitle(n)}`}
                     onClick={() => useUi.getState().patchReview({ targetId: n.id, step: "consent" })}
                     className="flex h-10 items-center gap-2 rounded-[6px] border border-line bg-surface px-3 text-left text-[13px] hover:border-brand hover:bg-wash"
                   >

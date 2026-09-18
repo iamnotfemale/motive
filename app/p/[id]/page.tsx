@@ -16,6 +16,8 @@ import { WorkspaceHeader } from "@/components/WorkspaceHeader";
 import { Inspector } from "@/components/panels/Inspector";
 import { ReviewPanel } from "@/components/panels/ReviewPanel";
 import { DecisionPanel } from "@/components/panels/DecisionPanel";
+import { ColdStartPanel } from "@/components/panels/ColdStartPanel";
+import { RefinePanel } from "@/components/panels/RefinePanel";
 import { IssuePanel } from "@/components/panels/IssuePanel";
 import { SourceShelf } from "@/components/panels/SourceShelf";
 import { CommandMenu } from "@/components/CommandMenu";
@@ -249,7 +251,7 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
             if (what === "claim") addCard("claim", { from: "P-01", edge: "investigates" });
             else if (what === "question") addCard("question", { from: "P-01", edge: "investigates" });
             else if (what === "source") useUi.getState().openPanel("shelf");
-            else toast("곧 붙습니다 — 콜드스타트 AI는 다음 단계예요.");
+            else useUi.getState().openPanel("coldstart");
           }}
           onSourceClick={(sourceId, targetId) => {
             const s = doc.sources.find((x) => x.id === sourceId);
@@ -289,6 +291,8 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
           {ui.panel === "inspector" && <Inspector key="inspector" pid={pid} />}
           {ui.panel === "review" && <ReviewPanel key="review" pid={pid} />}
           {ui.panel === "decision" && <DecisionPanel key="decision" pid={pid} />}
+          {ui.panel === "coldstart" && <ColdStartPanel key="coldstart" pid={pid} />}
+          {ui.panel === "refine" && <RefinePanel key="refine" pid={pid} />}
         </AnimatePresence>
 
         {ui.panel === "shelf" && <SourceShelf pid={pid} onAttachFile={(f) => void addFiles(f)} />}
