@@ -9,7 +9,7 @@ import { z } from "zod";
  * 키가 없으면 실패가 아니라 `aiOff` 로 답한다 — 직접 작성과 내보내기는 계속 돼야 한다.
  */
 
-const MODEL_ID = process.env.MOTIVE_MODEL ?? "anthropic/claude-sonnet-5";
+const MODEL_ID = process.env.MOTIVE_MODEL ?? "deepseek/deepseek-v4-flash-0731:free";
 
 /** OpenRouter 키가 있으면 OpenRouter, 없으면 Vercel AI Gateway(문자열 모델 ID) 로 간다. */
 function model() {
