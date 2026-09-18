@@ -17,6 +17,16 @@ function model() {
   return key ? createOpenRouter({ apiKey: key })(MODEL_ID) : MODEL_ID;
 }
 
+/**
+ * 모든 generateObject 호출에 공통. 출력은 작지만 추론 모델은 "생각" 토큰을 여기서 같이 쓴다 —
+ * 추론을 끄지 않으면 2048 토큰을 전부 생각에 쓰고 빈 답을 돌려준다(DeepSeek V4 Flash 에서 확인).
+ */
+const GEN = {
+  maxOutputTokens: 8192,
+  temperature: 0.2,
+  providerOptions: { openrouter: { reasoning: { enabled: false } } },
+};
+
 const coldStart = z.object({
   claims: z
     .array(
@@ -91,7 +101,7 @@ export async function POST(req: Request) {
 
       const { object } = await generateObject({
         model: model(),
-        maxOutputTokens: 2048, // 구조화 출력은 작다. OpenRouter 는 크레딧 대비 max_tokens 를 검사한다.
+        ...GEN,
         schema: coldStart,
         system: GUARD,
         prompt: `다음 문제 진술을 읽고 세 가지를 뽑아라.
@@ -120,16 +130,21 @@ ${problem}`,
 
       const { object } = await generateObject({
         model: model(),
-        maxOutputTokens: 2048, // 구조화 출력은 작다. OpenRouter 는 크레딧 대비 max_tokens 를 검사한다.
+        ...GEN,
         schema: evidenceOut,
         system: GUARD,
         prompt: `아래는 줄 번호가 붙은 자료 원문이다. 현재 캔버스의 카드와 관련된 근거 후보를 찾아라.
 
 규칙:
-- quote 는 원문에 있는 문장을 **그대로** 옮겨라. 요약·수정 금지.
+- 참여자 발언·사실 문장 하나하나를 카드 목록과 대조해, 관련이 있으면 전부 후보로 만들어라. 한 인용이 여러 카드와 관련되면 카드마다 따로 만든다.
+- quote 는 원문에 있는 문장을 **그대로** 옮겨라. 요약·수정 금지. 제목(#)이나 안내문은 인용하지 마라.
 - line 은 그 문장이 실제로 있는 줄 번호다.
+- claim 은 "이 인용이 무엇을 시사하는가"를 한국어 완결 문장으로 쓴다. limit 은 "이 인용만으로는 말할 수 없는 것"을 한국어 완결 문장으로 쓴다. 두 칸에 카드 ID 나 단어 하나만 쓰면 안 된다.
 - 관련된 카드가 없으면 후보를 만들지 마라. 억지로 채우지 마라.
 - polarity: 카드를 뒷받침하면 supports, 반대하면 contradicts, 제안의 근거면 based_on.
+
+예시 (형식만 참고, 내용은 아래 원문에서):
+{"quote":"회의 끝나고 링크를 다시 물어봤어요.","line":4,"claim":"공유된 정보가 대화에 묻혀 다시 묻는 일이 생긴다.","limit":"한 사람의 경험이라 빈도는 알 수 없다.","targetId":"P-01","polarity":"supports"}
 
 카드 목록:
 ${targets.map((t) => `${t.id} (${t.kind}) ${t.title}`).join("\n") || "(없음)"}
@@ -147,7 +162,7 @@ ${numbered}`,
 
       const { object } = await generateObject({
         model: model(),
-        maxOutputTokens: 2048, // 구조화 출력은 작다. OpenRouter 는 크레딧 대비 max_tokens 를 검사한다.
+        ...GEN,
         schema: summary,
         system: GUARD,
         prompt: `아래 자료를 읽고 무엇이 들어 있는지 알려줘라.
@@ -169,7 +184,7 @@ ${text}`,
       const problem = String(body.problem ?? "").slice(0, 4000);
       const { object } = await generateObject({
         model: model(),
-        maxOutputTokens: 2048, // 구조화 출력은 작다. OpenRouter 는 크레딧 대비 max_tokens 를 검사한다.
+        ...GEN,
         schema: refine,
         system: GUARD,
         prompt: `다음 문제 진술을 한 문장으로 정리하라. 대상·상황·불편이 드러나야 한다.
