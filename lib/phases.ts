@@ -13,7 +13,6 @@ export type ActionKey =
   | "add-claim"
   | "add-question"
   | "add-note"
-  | "coldstart"
   | "attach"
   | "url"
   | "sources"
@@ -40,7 +39,6 @@ const A: Record<ActionKey, ActionDef> = {
   "add-claim": { key: "add-claim", ko: "가설", icon: "Lightbulb", hint: "H" },
   "add-question": { key: "add-question", ko: "검토 질문", icon: "CircleQuestionMark", hint: "C" },
   "add-note": { key: "add-note", ko: "생각", icon: "StickyNote", hint: "N" },
-  coldstart: { key: "coldstart", ko: "불확실한 것부터", icon: "ScanSearch" },
   attach: { key: "attach", ko: "자료", icon: "Paperclip" },
   url: { key: "url", ko: "주소 읽기", icon: "Link2" },
   sources: { key: "sources", ko: "자료함", icon: "FolderOpen" },
@@ -79,7 +77,7 @@ export const SPOTLIGHT_KEYS: ActionKey[] = [
 
 /** 왼쪽 레일의 단계별 항목. 자료함·검색 아래에 붙는다. */
 export const RAIL_ACTIONS: Record<Phase, ActionDef[]> = {
-  define: [A.refine, A.coldstart],
+  define: [A.refine],
   explore: [A.attach, A["find-evidence"]],
   review: [A.conflicts, A.issues],
   decide: [A["make-decision"], A["add-requirement"]],

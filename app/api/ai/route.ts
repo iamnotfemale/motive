@@ -27,26 +27,6 @@ const GEN = {
   providerOptions: { openrouter: { reasoning: { enabled: false } } },
 };
 
-const coldStart = z.object({
-  claims: z
-    .array(
-      z.object({
-        text: z.string().describe("문제 진술에 이미 들어 있는 암묵적 주장 한 문장"),
-        reason: z.string().describe("왜 이것이 문제 진술에 함축돼 있는지"),
-      }),
-    )
-    .max(4),
-  questions: z
-    .array(
-      z.object({
-        text: z.string().describe("답에 따라 방향이 달라지는 질문"),
-        whyItMatters: z.string(),
-      }),
-    )
-    .max(4),
-  mindChangeConditions: z.array(z.object({ text: z.string() })).max(4),
-});
-
 const evidenceOut = z.object({
   candidates: z
     .array(
@@ -95,29 +75,6 @@ export async function POST(req: Request) {
   }
 
   try {
-    if (body.kind === "cold-start") {
-      const problem = String(body.problem ?? "").slice(0, 4000);
-      if (!problem.trim()) return Response.json({ error: "문제 진술이 비어 있어요." }, { status: 400 });
-
-      const { object } = await generateObject({
-        model: model(),
-        ...GEN,
-        schema: coldStart,
-        system: GUARD,
-        prompt: `다음 문제 진술을 읽고 세 가지를 뽑아라.
-
-1. 지금 우리가 안다고 생각하는 것 — 진술에 이미 함축된 주장. 사실이 아니라 "추론된 가정"으로 표시된다.
-2. 모르는 것 — 답에 따라 제품 방향이 달라질 질문.
-3. 생각을 바꿀 조건 — 이것이 나오면 현재 틀을 버려야 하는 근거.
-
-근거(Evidence)는 만들지 마라. 자료가 없으므로 근거를 지어낼 수 없다.
-
-문제 진술:
-${problem}`,
-      });
-      return Response.json(object);
-    }
-
     if (body.kind === "evidence") {
       const text = String(body.text ?? "").slice(0, 24000);
       const targets = (body.targets ?? []) as { id: string; kind: string; title: string }[];

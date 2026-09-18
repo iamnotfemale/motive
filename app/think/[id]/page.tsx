@@ -19,7 +19,6 @@ import { Inspector } from "@/components/panels/Inspector";
 import { SourcePanel } from "@/components/panels/SourcePanel";
 import { ReviewPanel } from "@/components/panels/ReviewPanel";
 import { DecisionPanel } from "@/components/panels/DecisionPanel";
-import { ColdStartPanel } from "@/components/panels/ColdStartPanel";
 import { RefinePanel } from "@/components/panels/RefinePanel";
 import { IssuePanel } from "@/components/panels/IssuePanel";
 import { CommandMenu } from "@/components/CommandMenu";
@@ -208,8 +207,6 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
       switch (key) {
         case "refine":
           return useUi.getState().openPanel("refine");
-        case "coldstart":
-          return useUi.getState().openPanel("coldstart");
         case "add-claim":
           return void addCard("claim", { from: "P-01", edge: "investigates" });
         case "add-question":
@@ -438,8 +435,7 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
           onAddFromSuggestion={(what) => {
             if (what === "claim") addCard("claim", { from: "P-01", edge: "investigates" });
             else if (what === "question") addCard("question", { from: "P-01", edge: "investigates" });
-            else if (what === "source") useUi.getState().openLeft("sources");
-            else useUi.getState().openPanel("coldstart");
+            else useUi.getState().openLeft("sources");
           }}
           onSourceClick={(sourceId, targetId) => {
             const s = doc.sources.find((x) => x.id === sourceId);
@@ -502,7 +498,6 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
           {ui.panel === "source" && <SourcePanel key="source" pid={pid} />}
           {ui.panel === "review" && <ReviewPanel key="review" pid={pid} />}
           {ui.panel === "decision" && <DecisionPanel key="decision" pid={pid} />}
-          {ui.panel === "coldstart" && <ColdStartPanel key="coldstart" pid={pid} />}
           {ui.panel === "refine" && <RefinePanel key="refine" pid={pid} />}
         </AnimatePresence>
 

@@ -28,14 +28,6 @@ async function call<T>(body: Record<string, unknown>): Promise<AiResult<T>> {
   }
 }
 
-export interface ColdStart {
-  claims: { text: string; reason: string }[];
-  questions: { text: string; whyItMatters: string }[];
-  mindChangeConditions: { text: string }[];
-}
-
-export const coldStart = (problem: string) => call<ColdStart>({ kind: "cold-start", problem });
-
 export interface SourceSummary {
   summary: string;
   points: string[];

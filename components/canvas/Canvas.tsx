@@ -24,7 +24,7 @@ interface Props {
   pid: string;
   onOpenNode: (id: string) => void;
   onNodeAction: (id: string, index: 0 | 1) => void;
-  onAddFromSuggestion: (what: "claim" | "source" | "question" | "coldstart") => void;
+  onAddFromSuggestion: (what: "claim" | "source" | "question") => void;
   onSourceClick: (sourceId: string, targetId?: string) => void;
   onFilesDropped: (files: File[], at: { x: number; y: number }, targetId?: string) => void;
   onPlaceBlock: (at: { x: number; y: number }) => void;
@@ -770,7 +770,6 @@ export function Canvas({
                 ["claim", "가설 추가"],
                 ["source", "자료로 근거 찾기"],
                 ["question", "검토 질문 추가"],
-                ["coldstart", "불확실한 것부터 정리"],
               ] as const
             ).map(([what, label]) => (
               <Btn
