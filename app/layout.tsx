@@ -25,7 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           toastOptions={{
             classNames: {
               toast:
-                "!bg-ink !text-white !border-0 !rounded-[8px] !text-[13px] !leading-[18px] !shadow-[0_8px_24px_rgba(24,24,27,.2)]",
+                "!bg-ink !text-white !border-0 !rounded-[8px] !text-[14px] !leading-[19px] !shadow-[0_8px_24px_rgba(24,24,27,.2)]",
               description: "!text-white/70",
               actionButton: "!bg-transparent !border !border-white/25 !text-white !rounded-[6px] !h-6 !px-2",
             },

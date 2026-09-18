@@ -7,18 +7,7 @@
  * 단계별 행동만 `정의 / 탐색 / 검토 / 결정 / 인계` 에 따라 바뀐다 (lib/phases.ts).
  */
 import { useRef } from "react";
-import {
-  ArrowLeftRight,
-  Grid2x2,
-  Hand,
-  Maximize2,
-  MousePointer2,
-  Paperclip,
-  Plus,
-  Redo2,
-  Sparkles,
-  Undo2,
-} from "lucide-react";
+import { Hand, Maximize2, MousePointer2, Paperclip, Plus, Redo2, Sparkles, Undo2 } from "lucide-react";
 import { Btn } from "@/components/kit";
 import { Icon } from "@/components/icon";
 import {
@@ -40,22 +29,22 @@ interface Props {
   tool: Tool;
   zoom: number;
   phase: Phase;
-  grid: boolean;
   canUndo: boolean;
   canRedo: boolean;
   onTool: (t: Tool) => void;
-  onGrid: (v: boolean) => void;
   onUndo: () => void;
   onRedo: () => void;
   onTidy: () => void;
   onZoom: (z: number) => void;
+  /** 고른 카드가 있으면 그 카드에 맞춰 확대한다. */
   onFit: () => void;
+  hasSelection: boolean;
   onAction: (key: ActionKey) => void;
   onAddKind: (kind: Kind) => void;
   onFiles: (files: File[]) => void;
 }
 
-const ADD_KINDS: Kind[] = ["claim", "question", "evidence", "solution", "note"];
+const ADD_KINDS: Kind[] = ["claim", "question", "note", "evidence", "solution"];
 
 export function Toolbar(p: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
@@ -63,8 +52,6 @@ export function Toolbar(p: Props) {
   const tools: { key: Tool; icon: typeof Hand; label: string; hint: string }[] = [
     { key: "select", icon: MousePointer2, label: "선택", hint: "V" },
     { key: "hand", icon: Hand, label: "손으로 이동", hint: "H · Space" },
-    { key: "frame", icon: Grid2x2, label: "격자", hint: "" },
-    { key: "add", icon: Plus, label: "블록 추가 — 캔버스를 눌러 놓기", hint: "N" },
   ];
 
   return (
@@ -78,11 +65,11 @@ export function Toolbar(p: Props) {
             <button
               type="button"
               aria-label={t.label}
-              aria-pressed={t.key === "frame" ? p.grid : p.tool === t.key}
-              onClick={() => (t.key === "frame" ? p.onGrid(!p.grid) : p.onTool(t.key))}
+              aria-pressed={p.tool === t.key}
+              onClick={() => p.onTool(t.key)}
               className={cn(
                 "flex size-8 items-center justify-center rounded-[6px] text-muted transition-colors duration-[120ms] hover:bg-wash hover:text-ink",
-                (t.key === "frame" ? p.grid : p.tool === t.key) && "bg-[#eff6ff] text-brand",
+                p.tool === t.key && "bg-[#eff6ff] text-brand",
               )}
             >
               <t.icon className="size-[18px]" />
@@ -90,10 +77,49 @@ export function Toolbar(p: Props) {
           </TooltipTrigger>
           <TooltipContent side="top">
             {t.label}
-            {t.hint && <span className="ml-1.5 font-mono text-[11px] opacity-60">{t.hint}</span>}
+            {t.hint && <span className="ml-1.5 font-mono text-[12px] opacity-60">{t.hint}</span>}
           </TooltipContent>
         </Tooltip>
       ))}
+
+      <DropdownMenu>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-label="블록 추가"
+                aria-pressed={p.tool === "add"}
+                className={cn(
+                  "flex size-8 items-center justify-center rounded-[6px] text-muted transition-colors duration-[120ms] hover:bg-wash hover:text-ink",
+                  p.tool === "add" && "bg-[#eff6ff] text-brand",
+                )}
+              >
+                <Plus className="size-[19px]" />
+              </button>
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="top">
+            블록 추가<span className="ml-1.5 font-mono text-[13px] opacity-60">N</span>
+          </TooltipContent>
+        </Tooltip>
+        <DropdownMenuContent side="top" align="start" className="w-56">
+          {ADD_KINDS.map((k) => (
+            <DropdownMenuItem key={k} onSelect={() => p.onAddKind(k)}>
+              {KIND[k].ko} 추가
+              <DropdownMenuShortcut>{KIND[k].prefix}</DropdownMenuShortcut>
+            </DropdownMenuItem>
+          ))}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onSelect={() => p.onTool("add")}>
+            캔버스에 놓아서 추가
+            <DropdownMenuShortcut>N</DropdownMenuShortcut>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem disabled>결정 — 해결안에서 만들어요</DropdownMenuItem>
+          <DropdownMenuItem disabled>요구사항 — 결정에서 만들어요</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <Sep />
 
@@ -110,7 +136,7 @@ export function Toolbar(p: Props) {
           </button>
         </TooltipTrigger>
         <TooltipContent side="top">
-          되돌리기<span className="ml-1.5 font-mono text-[11px] opacity-60">⌘Z</span>
+          되돌리기<span className="ml-1.5 font-mono text-[12px] opacity-60">⌘Z</span>
         </TooltipContent>
       </Tooltip>
       <Tooltip>
@@ -126,7 +152,7 @@ export function Toolbar(p: Props) {
           </button>
         </TooltipTrigger>
         <TooltipContent side="top">
-          다시 실행<span className="ml-1.5 font-mono text-[11px] opacity-60">⇧⌘Z</span>
+          다시 실행<span className="ml-1.5 font-mono text-[12px] opacity-60">⇧⌘Z</span>
         </TooltipContent>
       </Tooltip>
 
@@ -147,7 +173,7 @@ export function Toolbar(p: Props) {
               type="button"
               aria-label={a.ko}
               onClick={() => (a.key === "attach" ? fileRef.current?.click() : p.onAction(a.key))}
-              className="flex h-8 items-center gap-1.5 rounded-[6px] px-2 text-[13px] font-medium text-ink transition-colors duration-[120ms] hover:bg-wash"
+              className="flex h-8 items-center gap-1.5 rounded-[6px] px-2 text-[14px] font-medium text-ink transition-colors duration-[120ms] hover:bg-wash"
             >
               {a.key === "attach" ? (
                 <Paperclip className="size-4 text-muted" />
@@ -159,7 +185,7 @@ export function Toolbar(p: Props) {
           </TooltipTrigger>
           <TooltipContent side="top">
             {a.ko}
-            {a.hint && <span className="ml-1.5 font-mono text-[11px] opacity-60">{a.hint}</span>}
+            {a.hint && <span className="ml-1.5 font-mono text-[12px] opacity-60">{a.hint}</span>}
           </TooltipContent>
         </Tooltip>
       ))}
@@ -169,8 +195,8 @@ export function Toolbar(p: Props) {
       <button
         type="button"
         aria-label="축소"
-        onClick={() => p.onZoom(p.zoom * 0.9)}
-        className="flex size-7 items-center justify-center rounded-[6px] text-[15px] text-muted hover:bg-wash"
+        onClick={() => p.onZoom(p.zoom * 0.85)}
+        className="flex size-7 items-center justify-center rounded-[6px] text-[16px] text-muted hover:bg-wash"
       >
         −
       </button>
@@ -178,15 +204,15 @@ export function Toolbar(p: Props) {
         type="button"
         title="100%로 복귀"
         onClick={() => p.onZoom(1)}
-        className="h-7 min-w-12 rounded-[6px] font-mono text-[13px] text-ink hover:bg-wash"
+        className="h-7 min-w-12 rounded-[6px] font-mono text-[14px] text-ink hover:bg-wash"
       >
         {Math.round(p.zoom * 100)}%
       </button>
       <button
         type="button"
         aria-label="확대"
-        onClick={() => p.onZoom(p.zoom * 1.1)}
-        className="flex size-7 items-center justify-center rounded-[6px] text-[15px] text-muted hover:bg-wash"
+        onClick={() => p.onZoom(p.zoom * 1.18)}
+        className="flex size-7 items-center justify-center rounded-[6px] text-[16px] text-muted hover:bg-wash"
       >
         +
       </button>
@@ -194,38 +220,17 @@ export function Toolbar(p: Props) {
         <TooltipTrigger asChild>
           <button
             type="button"
-            aria-label="화면 맞춤"
+            aria-label={p.hasSelection ? "고른 카드에 맞춤" : "전체 맞춤"}
             onClick={p.onFit}
             className="flex size-7 items-center justify-center rounded-[6px] text-muted hover:bg-wash hover:text-ink"
           >
-            <Maximize2 className="size-4" />
+            <Maximize2 className="size-[17px]" />
           </button>
         </TooltipTrigger>
-        <TooltipContent side="top">화면 맞춤</TooltipContent>
+        <TooltipContent side="top">
+          {p.hasSelection ? "고른 카드에 맞춰 확대" : "전체에 맞춤"}
+        </TooltipContent>
       </Tooltip>
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            aria-label="블록 유형 고르기"
-            className="flex size-7 items-center justify-center rounded-[6px] text-muted hover:bg-wash hover:text-ink"
-          >
-            <ArrowLeftRight className="size-4 rotate-90" />
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent side="top" align="end" className="w-52">
-          {ADD_KINDS.map((k) => (
-            <DropdownMenuItem key={k} onSelect={() => p.onAddKind(k)}>
-              {KIND[k].ko} 추가
-              <DropdownMenuShortcut>{KIND[k].prefix}</DropdownMenuShortcut>
-            </DropdownMenuItem>
-          ))}
-          <DropdownMenuSeparator />
-          <DropdownMenuItem disabled>결정 — 해결안에서 만들어요</DropdownMenuItem>
-          <DropdownMenuItem disabled>요구사항 — 결정에서 만들어요</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
 
       <input
         ref={fileRef}

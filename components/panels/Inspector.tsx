@@ -62,7 +62,7 @@ export function Inspector({ pid }: { pid: string }) {
     <SidePanel testId="inspector">
       <div className="flex flex-col gap-2.5 px-5 pt-4">
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-muted">
+          <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-muted">
             <TypeIcon d={meta.icon} />
             {meta.ko}
           </span>
@@ -72,10 +72,10 @@ export function Inspector({ pid }: { pid: string }) {
           <Btn
             variant="ghost"
             size="sm"
-            onClick={() => useUi.getState().setFocusView(node.id)}
-            title="이 카드 주변 추론만 보기"
+            onClick={() => useUi.getState().setWide(true)}
+            title="전체 화면으로 편집"
           >
-            주변만 보기
+            넓게 보기
           </Btn>
           <PanelClose onClose={() => useUi.getState().closePanel()} />
         </div>
@@ -86,7 +86,7 @@ export function Inspector({ pid }: { pid: string }) {
           placeholder="제목을 입력하세요"
           aria-label="카드 제목"
           onChange={(e) => write(setTitle(node.md, e.target.value))}
-          className="kr field-sizing-content w-full resize-none border-0 bg-transparent p-0 text-[15px] leading-6 font-semibold text-ink placeholder:font-normal placeholder:text-faint"
+          className="kr field-sizing-content w-full resize-none border-0 bg-transparent p-0 text-[16px] leading-6 font-semibold text-ink placeholder:font-normal placeholder:text-faint"
         />
 
         <div className="-mx-5 flex gap-0.5 border-b border-line px-5">
@@ -98,7 +98,7 @@ export function Inspector({ pid }: { pid: string }) {
                 type="button"
                 onClick={() => useUi.getState().setInspTab(t.key)}
                 className={cn(
-                  "relative h-8 px-2.5 text-[13px] font-medium",
+                  "relative h-8 px-2.5 text-[14px] font-medium",
                   on ? "text-ink" : "text-muted hover:text-ink",
                 )}
               >
@@ -121,7 +121,7 @@ export function Inspector({ pid }: { pid: string }) {
                     type="button"
                     onClick={() => useUi.getState().setEditMode(m)}
                     className={cn(
-                      "h-7 rounded-[6px] px-2.5 text-[13px] font-medium transition-colors duration-[120ms]",
+                      "h-7 rounded-[6px] px-2.5 text-[14px] font-medium transition-colors duration-[120ms]",
                       ui.editMode === m
                         ? "bg-surface text-ink shadow-[0_1px_2px_rgba(24,24,27,.08)]"
                         : "text-muted hover:text-ink",
@@ -133,7 +133,7 @@ export function Inspector({ pid }: { pid: string }) {
               </div>
               <span className="flex-1" />
               {ui.editMode === "write" && (
-                <span className="text-[11px] text-faint">
+                <span className="text-[12px] text-faint">
                   <span className="font-mono">/</span> 로 블록 고르기
                 </span>
               )}
@@ -154,9 +154,9 @@ export function Inspector({ pid }: { pid: string }) {
                   rows={22}
                   spellCheck={false}
                   onChange={(e) => write(e.target.value)}
-                  className="w-full resize-y rounded-[6px] border border-line bg-wash-2 px-3.5 py-3 font-mono text-[13px] leading-5 text-ink transition-[border-color,box-shadow] duration-[120ms] focus:border-brand focus:shadow-[0_0_0_3px_#f4f4f5]"
+                  className="w-full resize-y rounded-[6px] border border-line bg-wash-2 px-3.5 py-3 font-mono text-[14px] leading-5 text-ink transition-[border-color,box-shadow] duration-[120ms] focus:border-brand focus:shadow-[0_0_0_3px_#f4f4f5]"
                 />
-                <p className="text-[12px] leading-4 text-muted">
+                <p className="text-[13px] leading-4 text-muted">
                   첫 <code className="font-mono">#</code> 줄이 카드 제목이에요. 나머지는 작성 모드의
                   블록과 그대로 대응해요.
                 </p>
@@ -181,7 +181,7 @@ export function Inspector({ pid }: { pid: string }) {
         {ui.inspTab === "links" && (
           <div className="flex flex-col gap-1.5">
             {links.length === 0 && (
-              <div className="rounded-[6px] border border-dashed border-line p-4 text-center text-[13px] text-muted">
+              <div className="rounded-[6px] border border-dashed border-line p-4 text-center text-[14px] text-muted">
                 아직 연결이 없어요. 캔버스에서 카드 액션으로 연결할 수 있어요.
               </div>
             )}
@@ -190,13 +190,13 @@ export function Inspector({ pid }: { pid: string }) {
                 key={edge.id}
                 type="button"
                 onClick={() => useUi.getState().select([otherId])}
-                className="flex items-center gap-2.5 rounded-[6px] border border-line bg-surface px-3 py-2.5 text-left text-[13px] leading-[18px] hover:bg-wash-2"
+                className="flex items-center gap-2.5 rounded-[6px] border border-line bg-surface px-3 py-2.5 text-left text-[14px] leading-[19px] hover:bg-wash-2"
               >
-                <span className="shrink-0 font-mono text-[11px] text-muted">
+                <span className="shrink-0 font-mono text-[12px] text-muted">
                   {outgoing ? `${node.id} →` : `→ ${node.id}`}
                 </span>
                 <span className="min-w-0 flex-1 truncate">{other ? nodeTitle(other) : otherId}</span>
-                <span className="inline-flex shrink-0 items-center gap-1.5 text-[12px] text-muted">
+                <span className="inline-flex shrink-0 items-center gap-1.5 text-[13px] text-muted">
                   {edge.type === "contradicts" && <Dot tone="danger" />}
                   {edgeLabel(edge, findNode(doc, edge.to))}
                 </span>
@@ -209,17 +209,17 @@ export function Inspector({ pid }: { pid: string }) {
           (node.sourceId ? (
             <div className="flex flex-col gap-1.5 rounded-[6px] border border-line p-3">
               <div className="flex items-center gap-2">
-                <span className="font-mono text-[13px]">{source?.name ?? "알 수 없는 자료"}</span>
+                <span className="font-mono text-[14px]">{source?.name ?? "알 수 없는 자료"}</span>
                 {source?.tag && <Badge>{source.tag}</Badge>}
                 <span className="flex-1" />
                 {node.sourceLocator?.line && (
-                  <span className="text-[12px] text-muted">줄 {node.sourceLocator.line}</span>
+                  <span className="text-[13px] text-muted">줄 {node.sourceLocator.line}</span>
                 )}
               </div>
 
               {sourceMissing ? (
                 <>
-                  <div className="mt-1 flex items-center gap-2.5 text-[13px] leading-[18px] text-danger">
+                  <div className="mt-1 flex items-center gap-2.5 text-[14px] leading-[19px] text-danger">
                     <Dot tone="danger" />이 근거의 원본 자료를 찾을 수 없어요.
                   </div>
                   <div className="mt-1 flex gap-1.5">
@@ -233,12 +233,12 @@ export function Inspector({ pid }: { pid: string }) {
                 </>
               ) : (
                 <>
-                  <div className="flex items-center gap-1.5 text-[12px] text-ok">
+                  <div className="flex items-center gap-1.5 text-[13px] text-ok">
                     <Dot tone="ok" />
                     {node.sourceLocator?.verified ? "원문에서 인용 확인됨" : "원문 확인 필요"}
                   </div>
                   {node.sourceLocator?.excerpt && (
-                    <p className="kr mt-1 rounded-[6px] bg-wash px-3 py-2 text-[13px] leading-[22px]">
+                    <p className="kr mt-1 rounded-[6px] bg-wash px-3 py-2 text-[14px] leading-[23px]">
                       {node.sourceLocator.excerpt}
                     </p>
                   )}
@@ -263,13 +263,13 @@ export function Inspector({ pid }: { pid: string }) {
               )}
             </div>
           ) : (
-            <div className="rounded-[6px] border border-dashed border-line p-4 text-center text-[13px] text-muted">
+            <div className="rounded-[6px] border border-dashed border-line p-4 text-center text-[14px] text-muted">
               이 블록에 연결된 출처가 없어요. 자료를 카드에 드롭하면 여기에 나타나요.
             </div>
           ))}
       </div>
 
-      <div className="flex min-h-10 items-center gap-2.5 border-t border-line px-5 py-2.5 text-[12px] leading-4">
+      <div className="flex min-h-10 items-center gap-2.5 border-t border-line px-5 py-2.5 text-[13px] leading-4">
         <Dot tone={save.tone} />
         <span className={cn("flex-1", save.tone === "danger" ? "text-danger" : "text-muted")}>
           {save.long}

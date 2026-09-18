@@ -57,6 +57,8 @@ interface DocState {
 
   createProject: (problemStatement: string, name?: string) => string;
   createDemoProject: () => string;
+  /** 고른 카드들만 떼어 새 프로젝트로. 그 사이의 관계와 자료도 같이 간다. */
+  createProjectFrom: (pid: string, ids: string[], name: string) => string | null;
   deleteProject: (pid: string) => void;
   renameProject: (pid: string, name: string) => void;
 
@@ -184,6 +186,52 @@ export const useDoc = create<DocState>()(
                 name: DEMO_PROJECT_NAME,
                 problemStatement: DEMO_PROBLEM,
                 demo: true,
+                createdAt: at,
+                updatedAt: at,
+              },
+              ...s.projects,
+            ],
+            docs: { ...s.docs, [pid]: doc },
+          }));
+          return pid;
+        },
+
+        createProjectFrom: (from, ids, name) => {
+          const src = get().docs[from];
+          if (!src || !ids.length) return null;
+          const keep = new Set(ids);
+          const nodes = src.nodes.filter((n) => keep.has(n.id));
+          if (!nodes.length) return null;
+
+          const sourceIds = new Set(nodes.map((n) => n.sourceId).filter(Boolean) as string[]);
+          for (const id of ids) if (src.sources.some((s) => s.id === id)) sourceIds.add(id);
+
+          // 왼쪽 위로 당겨 붙인다. 원본 배치의 상대 위치는 유지한다.
+          const spots = ids.map((id) => src.placements[id]).filter(Boolean);
+          const ox = Math.min(...spots.map((p) => p.x)) - 72;
+          const oy = Math.min(...spots.map((p) => p.y)) - 48;
+
+          const pid = "prj-" + Math.random().toString(36).slice(2, 9);
+          const at = now();
+          const doc = emptyDoc();
+          doc.nodes = nodes;
+          doc.edges = src.edges.filter((e) => keep.has(e.from) && keep.has(e.to));
+          doc.sources = src.sources.filter((s) => sourceIds.has(s.id));
+          doc.placements = Object.fromEntries(
+            [...ids, ...doc.sources.map((s) => s.id)]
+              .map((id) => [id, src.placements[id]])
+              .filter(([, p]) => Boolean(p))
+              .map(([id, p]) => [id as string, { ...(p as Placement), x: (p as Placement).x - ox, y: (p as Placement).y - oy }]),
+          );
+
+          const anchor = nodes.find((n) => n.type === "problem");
+          set((s) => ({
+            projects: [
+              {
+                id: pid,
+                name,
+                problemStatement: anchor ? titleOf(anchor.md) : name,
+                demo: get().projects.find((p) => p.id === from)?.demo,
                 createdAt: at,
                 updatedAt: at,
               },

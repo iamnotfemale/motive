@@ -131,13 +131,13 @@ export function ColdStartPanel({ pid }: { pid: string }) {
       </div>
 
       <div className="flex flex-1 flex-col gap-4 overflow-auto px-5 py-4">
-        <p className="kr rounded-[6px] bg-wash px-3 py-2.5 text-[13px] leading-[22px]">{statement}</p>
+        <p className="kr rounded-[6px] bg-wash px-3 py-2.5 text-[14px] leading-[23px]">{statement}</p>
 
         {busy && (
           <div className="flex flex-col gap-2.5 rounded-[8px] border border-line p-4">
-            <span className="text-[13px] font-medium">문제 진술에서 가정과 빈칸을 찾는 중</span>
+            <span className="text-[14px] font-medium">문제 진술에서 가정과 빈칸을 찾는 중</span>
             <Indeterminate />
-            <p className="text-[12px] leading-[18px] text-muted">
+            <p className="text-[13px] leading-[19px] text-muted">
               답을 만들지 않아요. 지금 무엇을 모르는지만 꺼내요.
             </p>
           </div>
@@ -184,7 +184,7 @@ export function ColdStartPanel({ pid }: { pid: string }) {
       </div>
 
       <div className="flex items-center gap-2 border-t border-line px-5 py-3">
-        <span className="flex-1 text-[12px] text-muted">
+        <span className="flex-1 text-[13px] text-muted">
           {data ? `${count}개 선택됨` : "확정하기 전에는 캔버스에 올라가지 않아요"}
         </span>
         <Btn onClick={() => useUi.getState().closePanel()}>나중에</Btn>
@@ -213,7 +213,7 @@ function Group({
   return (
     <section className="flex flex-col gap-1.5">
       <FieldLabel>{label}</FieldLabel>
-      <p className="kr text-[12px] leading-[18px] text-muted">{hint}</p>
+      <p className="kr text-[13px] leading-[19px] text-muted">{hint}</p>
       {items.map((it) => (
         <label
           key={it.key}
@@ -225,8 +225,8 @@ function Group({
             className="mt-0.5"
           />
           <span className="flex flex-col gap-1">
-            <span className="kr text-[13px] leading-5">{it.text}</span>
-            {it.sub && <span className="kr text-[12px] leading-[18px] text-muted">{it.sub}</span>}
+            <span className="kr text-[14px] leading-5">{it.text}</span>
+            {it.sub && <span className="kr text-[13px] leading-[19px] text-muted">{it.sub}</span>}
           </span>
         </label>
       ))}

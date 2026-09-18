@@ -12,7 +12,7 @@ import { motion } from "motion/react";
 import { toast } from "sonner";
 import { Badge, Btn, Dot } from "@/components/kit";
 import { WorkspaceHeader } from "@/components/WorkspaceHeader";
-import { USER_CHECKS, buildAgentFiles, buildHandoffPreview, systemChecks } from "@/lib/export";
+import { buildAgentFiles, buildHandoffPreview, systemChecks } from "@/lib/export";
 import { summarize } from "@/lib/issues";
 import { useDoc } from "@/lib/store";
 import { useUi } from "@/lib/ui";
@@ -31,7 +31,6 @@ export default function Handoff({ params }: { params: Promise<{ id: string }> })
 
   const project = useDoc((s) => s.projects.find((p) => p.id === pid));
   const doc = useDoc((s) => s.docs[pid]);
-  const toggleCheck = useDoc((s) => s.toggleCheck);
   const markGenerated = useDoc((s) => s.markGenerated);
   const ui = useUi();
 
@@ -53,15 +52,14 @@ export default function Handoff({ params }: { params: Promise<{ id: string }> })
     if (doc && doc.genAt === 0) markGenerated(pid);
   }, [doc, pid, markGenerated]);
 
-  if (!hydrated) return <div className="p-10 text-[13px] text-muted">불러오는 중…</div>;
+  if (!hydrated) return <div className="p-10 text-[14px] text-muted">불러오는 중…</div>;
   if (!project || !doc) {
     router.replace("/");
     return null;
   }
 
-  const userDone = USER_CHECKS.filter((c) => doc.checks[c.key]).length;
   const sysFailed = sys.filter((c) => !c.ok).length;
-  const remaining = USER_CHECKS.length - userDone + sysFailed;
+  const remaining = sysFailed + issues.length;
   const complete = remaining === 0;
   const stale = doc.genAt > 0 && doc.changedAt > doc.genAt;
 
@@ -108,8 +106,8 @@ export default function Handoff({ params }: { params: Promise<{ id: string }> })
       >
         <aside className="flex w-[300px] shrink-0 flex-col border-r border-line bg-surface">
           <div className="flex flex-col gap-1.5 px-5 pt-5 pb-3">
-            <h2 className="text-[15px] font-semibold">인계 전 확인</h2>
-            <p className={cn("kr text-[13px] leading-[18px]", complete ? "text-ok" : "text-muted")}>
+            <h2 className="text-[16px] font-semibold">인계 전 확인</h2>
+            <p className={cn("kr text-[14px] leading-[19px]", complete ? "text-ok" : "text-muted")}>
               {complete
                 ? "인계에 필요한 정보를 확인했어요"
                 : `남은 확인 ${remaining}개 · 확인 없이도 초안으로 내보낼 수 있어요`}
@@ -118,22 +116,22 @@ export default function Handoff({ params }: { params: Promise<{ id: string }> })
 
           <div className="flex flex-1 flex-col gap-3.5 overflow-auto px-3 pb-4">
             <section className="flex flex-col gap-0.5">
-              <h3 className="px-2 py-1.5 text-[11px] leading-4 font-semibold tracking-[.02em] text-faint">
+              <h3 className="px-2 py-1.5 text-[12px] leading-4 font-semibold tracking-[.02em] text-faint">
                 시스템 확인
               </h3>
               {sys.map((c) => (
                 <div key={c.key} className="flex items-start gap-2.5 rounded-[6px] p-2">
                   <span
                     className={cn(
-                      "mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full text-[10px] text-white",
+                      "mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full text-[11px] text-white",
                       c.ok ? "bg-ok" : "bg-warn",
                     )}
                   >
                     {c.ok ? "✓" : "!"}
                   </span>
                   <span className="flex min-w-0 flex-col gap-px">
-                    <span className="text-[13px] leading-[18px] font-medium">{c.title}</span>
-                    <span className={cn("kr text-[12px] leading-4", c.ok ? "text-muted" : "text-warn")}>
+                    <span className="text-[14px] leading-[19px] font-medium">{c.title}</span>
+                    <span className={cn("kr text-[13px] leading-4", c.ok ? "text-muted" : "text-warn")}>
                       {c.sub}
                     </span>
                   </span>
@@ -141,57 +139,27 @@ export default function Handoff({ params }: { params: Promise<{ id: string }> })
               ))}
             </section>
 
-            <section className="flex flex-col gap-0.5">
-              <h3 className="px-2 py-1.5 text-[11px] leading-4 font-semibold tracking-[.02em] text-faint">
-                내가 확인할 항목
-              </h3>
-              {USER_CHECKS.map((c) => {
-                const on = Boolean(doc.checks[c.key]);
-                return (
-                  <button
-                    key={c.key}
-                    type="button"
-                    onClick={() => toggleCheck(pid, c.key)}
-                    className="flex w-full items-start gap-2.5 rounded-[6px] p-2 text-left transition-colors duration-[120ms] hover:bg-wash-2 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand"
-                  >
-                    <span
-                      className={cn(
-                        "mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-[4px] border text-[10px] text-white transition-colors duration-[120ms]",
-                        on ? "border-brand bg-brand" : "border-line bg-surface",
-                      )}
-                    >
-                      {on ? "✓" : ""}
-                    </span>
-                    <span className="flex min-w-0 flex-col gap-px">
-                      <span className="text-[13px] leading-[18px] font-medium">{c.title}</span>
-                      <span className="kr text-[12px] leading-4 text-muted">{c.sub}</span>
-                    </span>
-                  </button>
-                );
-              })}
-            </section>
-
             {conflicts.length > 0 && (
               <section className="mx-2 flex flex-col gap-2 rounded-[6px] border border-line bg-wash-2 p-3">
-                <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-danger">
+                <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-danger">
                   <Dot tone="danger" />
                   어긋남 {conflicts.length}건
                 </span>
-                <p className="kr text-[12px] leading-[18px] text-muted">
+                <p className="kr text-[13px] leading-[19px] text-muted">
                   문서 9절에 그대로 들어갑니다. 지우지 않아요.
                 </p>
               </section>
             )}
           </div>
 
-          <p className="kr border-t border-line px-5 py-3 text-[12px] leading-4 text-muted">
+          <p className="kr border-t border-line px-5 py-3 text-[13px] leading-4 text-muted">
             확인은 인계 문서에 남는 판단이에요. 검증 완료를 뜻하지 않아요.
           </p>
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex h-13 shrink-0 items-center gap-2 border-b border-line bg-surface px-6">
-            <span className="font-mono text-[13px] font-semibold">PROJECT_HANDOFF.md</span>
+            <span className="font-mono text-[14px] font-semibold">PROJECT_HANDOFF.md</span>
             {project.demo && <Badge>데모 자료</Badge>}
             <div className="ml-2 flex rounded-[6px] bg-wash p-0.5">
               {(["preview", "raw"] as const).map((v) => (
@@ -200,7 +168,7 @@ export default function Handoff({ params }: { params: Promise<{ id: string }> })
                   type="button"
                   onClick={() => setView(v)}
                   className={cn(
-                    "h-6.5 rounded-[6px] px-2.5 text-[12px] font-medium transition-colors duration-[120ms]",
+                    "h-6.5 rounded-[6px] px-2.5 text-[13px] font-medium transition-colors duration-[120ms]",
                     view === v
                       ? "bg-surface text-ink shadow-[0_1px_2px_rgba(24,24,27,.08)]"
                       : "text-muted hover:text-ink",
@@ -231,7 +199,7 @@ export default function Handoff({ params }: { params: Promise<{ id: string }> })
           </div>
 
           {stale && (
-            <div className="mx-6 mt-3 flex items-center gap-2.5 rounded-[6px] border border-line bg-wash-2 px-3 py-2 text-[13px] leading-[18px]">
+            <div className="mx-6 mt-3 flex items-center gap-2.5 rounded-[6px] border border-line bg-wash-2 px-3 py-2 text-[14px] leading-[19px]">
               <Dot tone="warn" />
               <span className="flex-1">캔버스가 바뀐 뒤 미리보기가 오래됐어요.</span>
               <Btn size="sm" onClick={() => markGenerated(pid)}>
@@ -249,12 +217,12 @@ export default function Handoff({ params }: { params: Promise<{ id: string }> })
                 <Preview md={md} />
               </article>
             ) : (
-              <pre className="mx-auto max-w-[720px] rounded-[8px] border border-line bg-wash-2 px-7 py-6 font-mono text-[13px] leading-5 wrap-break-word whitespace-pre-wrap text-ink select-text">
+              <pre className="mx-auto max-w-[720px] rounded-[8px] border border-line bg-wash-2 px-7 py-6 font-mono text-[14px] leading-5 wrap-break-word whitespace-pre-wrap text-ink select-text">
                 {md}
               </pre>
             )}
 
-            <p className="mx-auto mt-4 max-w-[720px] text-[12px] leading-[18px] text-muted">
+            <p className="mx-auto mt-4 max-w-[720px] text-[13px] leading-[19px] text-muted">
               다운로드하면 <span className="font-mono">PROJECT_HANDOFF.md</span> 와 함께 코딩 에이전트용{" "}
               <span className="font-mono">PROJECT_CONTEXT · DECISIONS · EVIDENCE · AGENTS</span> 4개 파일이
               같이 나와요.
@@ -273,51 +241,51 @@ function Preview({ md }: { md: string }) {
       {md.split("\n").map((line, i) => {
         if (line.startsWith("#### "))
           return (
-            <h5 key={i} className="kr mt-4 text-[13px] font-semibold">
+            <h5 key={i} className="kr mt-4 text-[14px] font-semibold">
               {line.slice(5)}
             </h5>
           );
         if (line.startsWith("### "))
           return (
-            <h4 key={i} className="kr mt-5 text-[14px] font-semibold">
+            <h4 key={i} className="kr mt-5 text-[15px] font-semibold">
               {line.slice(4)}
             </h4>
           );
         if (line.startsWith("## "))
           return (
-            <h3 key={i} className="kr mt-7 border-t border-line pt-5 text-[16px] font-semibold">
+            <h3 key={i} className="kr mt-7 border-t border-line pt-5 text-[17px] font-semibold">
               {line.slice(3)}
             </h3>
           );
         if (line.startsWith("# "))
           return (
-            <h2 key={i} className="kr text-[22px] leading-8 font-semibold tracking-[-0.01em]">
+            <h2 key={i} className="kr text-[24px] leading-8 font-semibold tracking-[-0.01em]">
               {line.slice(2)}
             </h2>
           );
         if (line.startsWith("> "))
           return (
-            <p key={i} className="kr mt-3 border-l-2 border-line pl-3 text-[13px] text-muted">
+            <p key={i} className="kr mt-3 border-l-2 border-line pl-3 text-[14px] text-muted">
               {line.slice(2)}
             </p>
           );
         if (line.startsWith("- "))
           return (
-            <p key={i} className="kr mt-1.5 flex gap-2 text-[14px] leading-[24px]">
+            <p key={i} className="kr mt-1.5 flex gap-2 text-[15px] leading-[25px]">
               <span className="shrink-0 text-faint">•</span>
               <span>{line.slice(2)}</span>
             </p>
           );
         if (line.startsWith("  "))
           return (
-            <p key={i} className="kr pl-6 text-[13px] leading-[22px] text-muted">
+            <p key={i} className="kr pl-6 text-[14px] leading-[23px] text-muted">
               {line.trim()}
             </p>
           );
         if (line === "---") return <hr key={i} className="mt-6 border-line" />;
         if (!line.trim()) return <span key={i} className="h-2" />;
         return (
-          <p key={i} className="kr mt-1.5 text-[14px] leading-[26px]">
+          <p key={i} className="kr mt-1.5 text-[15px] leading-[28px]">
             {line}
           </p>
         );

@@ -26,8 +26,10 @@ export function IssuePanel({ pid, mode, issues, conflicts, onClose }: Props) {
   const removeEdge = useDoc((s) => s.removeEdge);
 
   function focus(ids: string[]) {
+    // 해당 블록으로 화면을 옮기고 그 블록에 맞춰 확대한다.
     useUi.getState().select(ids.slice(0, 1));
     useUi.getState().setFocusView(ids[0]);
+    useUi.getState().requestFit();
     onClose();
   }
 
@@ -42,7 +44,7 @@ export function IssuePanel({ pid, mode, issues, conflicts, onClose }: Props) {
     >
       <div className="flex items-center gap-2 border-b border-line px-4 py-3">
         <span className="font-semibold">{mode === "conflicts" ? "어긋남" : "인계 전 확인"}</span>
-        <span className="text-[12px] text-muted">
+        <span className="text-[13px] text-muted">
           {mode === "conflicts" ? conflicts.length : issues.length}건
         </span>
         <span className="flex-1" />
@@ -58,9 +60,9 @@ export function IssuePanel({ pid, mode, issues, conflicts, onClose }: Props) {
               <div key={c.key} className="flex flex-col gap-2.5 rounded-[6px] border border-line p-3">
                 <div className="flex items-start gap-2.5">
                   <Dot tone="danger" className="mt-1.5" />
-                  <p className="kr flex-1 text-[13px] leading-5">{c.text}</p>
+                  <p className="kr flex-1 text-[14px] leading-5">{c.text}</p>
                 </div>
-                <p className="text-[12px] leading-[18px] text-muted">
+                <p className="text-[13px] leading-[19px] text-muted">
                   어느 쪽이 맞는지는 판단하지 않아요. 결정을 고치거나, 근거를 제외하거나, 알고도
                   진행한다고 표시할 수 있어요.
                 </p>
@@ -119,7 +121,7 @@ export function IssuePanel({ pid, mode, issues, conflicts, onClose }: Props) {
         ) : (
           groupIssues(issues).map((g) => (
             <div key={g.group} className="flex flex-col gap-1">
-              <div className="px-1 py-1.5 text-[11px] leading-4 font-semibold tracking-[.02em] text-faint">
+              <div className="px-1 py-1.5 text-[12px] leading-4 font-semibold tracking-[.02em] text-faint">
                 {g.group} {g.issues.length}
               </div>
               {g.issues.map((i) => {
@@ -131,9 +133,9 @@ export function IssuePanel({ pid, mode, issues, conflicts, onClose }: Props) {
                     onClick={() => focus(i.nodeIds)}
                     className="flex flex-col gap-0.5 rounded-[6px] px-2 py-2 text-left hover:bg-wash-2"
                   >
-                    <span className="kr text-[13px] leading-[18px]">{i.text}</span>
+                    <span className="kr text-[14px] leading-[19px]">{i.text}</span>
                     {node && (
-                      <span className="truncate text-[12px] text-muted">{nodeTitle(node)}</span>
+                      <span className="truncate text-[13px] text-muted">{nodeTitle(node)}</span>
                     )}
                   </button>
                 );
@@ -143,7 +145,7 @@ export function IssuePanel({ pid, mode, issues, conflicts, onClose }: Props) {
         )}
       </div>
 
-      <p className="border-t border-line px-4 py-2.5 text-[12px] leading-4 text-muted">
+      <p className="border-t border-line px-4 py-2.5 text-[13px] leading-4 text-muted">
         확인하지 않아도 인계 문서는 만들 수 있어요. 미확인 상태는 문서에 그대로 남아요.
       </p>
     </motion.div>
@@ -151,7 +153,7 @@ export function IssuePanel({ pid, mode, issues, conflicts, onClose }: Props) {
 }
 
 const Empty = ({ children }: { children: React.ReactNode }) => (
-  <div className="rounded-[6px] border border-dashed border-line p-5 text-center text-[13px] text-muted">
+  <div className="rounded-[6px] border border-dashed border-line p-5 text-center text-[14px] text-muted">
     {children}
   </div>
 );

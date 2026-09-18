@@ -17,6 +17,7 @@ import {
   Quote,
   ScanSearch,
   Sparkles,
+  StickyNote,
   TriangleAlert,
   type LucideIcon,
 } from "lucide-react";
@@ -37,6 +38,7 @@ const MAP: Record<string, LucideIcon> = {
   Quote,
   ScanSearch,
   Sparkles,
+  StickyNote,
   TriangleAlert,
 };
 

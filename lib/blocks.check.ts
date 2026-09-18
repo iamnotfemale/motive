@@ -19,8 +19,8 @@ const MD = `# 제출 준비를 별도 협업 앱으로 옮기면 누락이 줄�
 ---
 
 ### 메모
-\`\`\`
-const a = 1;
+\`\`\`python
+print(1)
 \`\`\`
 `;
 
@@ -36,7 +36,8 @@ assert.ok(types.includes("quote") && types.includes("divider") && types.includes
 const checks = blocks.filter((b) => b.type === "check");
 assert.deepEqual(checks.map((c) => c.checked), [false, true]);
 assert.equal(checks[1].text, "이미 끝난 항목");
-assert.equal(blocks.find((b) => b.type === "code")!.text, "const a = 1;");
+assert.equal(blocks.find((b) => b.type === "code")!.text, "print(1)");
+assert.equal(blocks.find((b) => b.type === "code")!.lang, "python");
 assert.equal(blocks.find((b) => b.type === "quote")!.text, "앱을 하나 더 가입해야 하면 그냥 카톡에 정리할 것 같아요.");
 
 // 왕복: 다시 md 로 쓰고 읽어도 같은 블록이 나온다
@@ -44,15 +45,16 @@ const title = titleOf(MD);
 const round = blocksToMd(title, blocks);
 assert.equal(titleOf(round), title, "왕복에서 제목이 바뀌었다");
 assert.deepEqual(
-  mdToBlocks(round).map((b) => ({ t: b.type, x: b.text, c: b.checked })),
-  blocks.map((b) => ({ t: b.type, x: b.text, c: b.checked })),
+  mdToBlocks(round).map((b) => ({ t: b.type, x: b.text, c: b.checked, l: b.lang })),
+  blocks.map((b) => ({ t: b.type, x: b.text, c: b.checked, l: b.lang })),
   "왕복에서 블록이 달라졌다",
 );
 
 // 인용·체크·코드 내용이 살아 있다
 assert.ok(round.includes("> 앱을 하나 더"));
 assert.ok(round.includes("- [x] 이미 끝난 항목"));
-assert.ok(round.includes("const a = 1;"));
+assert.ok(round.includes("```python"), "코드 언어가 빠졌다");
+assert.ok(round.includes("print(1)"));
 
 // 표식을 치면 유형이 바뀐다
 assert.deepEqual(autoType("## 섹션"), { type: "h2", rest: "섹션" });

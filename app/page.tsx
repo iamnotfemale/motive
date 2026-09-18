@@ -78,7 +78,7 @@ export default function ProblemStart() {
   return (
     <div className="flex min-h-screen flex-col bg-canvas">
       <header className="flex h-13 shrink-0 items-center gap-3 px-6">
-        <span className="text-[13px] font-semibold tracking-[-0.01em]">Motive</span>
+        <span className="text-[14px] font-semibold tracking-[-0.01em]">Motive</span>
         <span className="flex-1" />
         {mounted && (
           <DropdownMenu>
@@ -91,23 +91,23 @@ export default function ProblemStart() {
             <DropdownMenuContent align="end" className="w-64">
               {projects.length > 0 && (
                 <>
-                  <DropdownMenuLabel className="text-[11px] text-faint">최근</DropdownMenuLabel>
+                  <DropdownMenuLabel className="text-[12px] text-faint">최근</DropdownMenuLabel>
                   {projects.slice(0, 6).map((p) => (
                     <DropdownMenuItem
                       key={p.id}
                       onSelect={() => router.push(`/p/${p.id}`)}
-                      className="text-[13px]"
+                      className="text-[14px]"
                     >
                       <span className="min-w-0 flex-1 truncate">{p.name}</span>
-                      {p.demo && <span className="text-[11px] text-faint">데모</span>}
+                      {p.demo && <span className="text-[12px] text-faint">데모</span>}
                     </DropdownMenuItem>
                   ))}
                   <DropdownMenuSeparator />
                 </>
               )}
-              <DropdownMenuItem onSelect={openDemo} className="text-[13px]">
+              <DropdownMenuItem onSelect={openDemo} className="text-[14px]">
                 데모 프로젝트 열기
-                <span className="ml-auto text-[11px] text-faint">제출 체크룸</span>
+                <span className="ml-auto text-[12px] text-faint">제출 체크룸</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -122,10 +122,10 @@ export default function ProblemStart() {
           className="flex w-full max-w-[720px] flex-col gap-5"
         >
           <div>
-            <h1 className="text-[24px] leading-7 font-semibold tracking-[-0.01em]">
+            <h1 className="text-[26px] leading-7 font-semibold tracking-[-0.01em]">
               어떤 문제를 풀고 있나요?
             </h1>
-            <p className="kr mt-2 text-[13px] leading-[22px] text-muted">
+            <p className="kr mt-2 text-[14px] leading-[23px] text-muted">
               완벽하게 정리하지 않아도 괜찮아요. 답을 제안하기 전에 무엇이 불확실한지부터 정리해요.
             </p>
           </div>
@@ -144,7 +144,7 @@ export default function ProblemStart() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="제목 (선택)"
-              className="block w-full border-0 bg-transparent px-5 pt-4 pb-1 text-[15px] font-medium text-ink placeholder:text-faint"
+              className="block w-full border-0 bg-transparent px-5 pt-4 pb-1 text-[16px] font-medium text-ink placeholder:text-faint"
             />
             <textarea
               ref={bodyRef}
@@ -158,10 +158,10 @@ export default function ProblemStart() {
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
               placeholder="문제를 한두 문장으로 적어주세요."
-              className="kr block w-full resize-none border-0 bg-transparent px-5 pt-2 pb-4 text-[15px] leading-[26px] text-ink placeholder:text-faint"
+              className="kr block w-full resize-none border-0 bg-transparent px-5 pt-2 pb-4 text-[16px] leading-[28px] text-ink placeholder:text-faint"
             />
             <div className="flex items-center gap-3 border-t border-wash px-5 py-3">
-              <span className={cn("kr text-[12px] leading-4", msgTone)}>{msg}</span>
+              <span className={cn("kr text-[13px] leading-4", msgTone)}>{msg}</span>
               <span className="flex-1" />
               {state === "failed" && (
                 <Btn
@@ -180,7 +180,7 @@ export default function ProblemStart() {
             </div>
           </div>
 
-          <div className="flex gap-2.5 text-[13px] leading-5 text-muted">
+          <div className="flex gap-2.5 text-[14px] leading-5 text-muted">
             <span className="shrink-0 text-faint">예시</span>
             <span className="kr">{S01_EXAMPLE}</span>
             <Btn

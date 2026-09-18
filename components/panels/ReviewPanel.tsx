@@ -101,7 +101,7 @@ export function ReviewPanel({ pid }: { pid: string }) {
         <div className="flex items-center gap-2">
           <span className="font-semibold">자료 검토</span>
           <span
-            className="max-w-[180px] truncate font-mono text-[12px] text-muted"
+            className="max-w-[180px] truncate font-mono text-[13px] text-muted"
             title={source.name}
           >
             {source.name}
@@ -119,7 +119,7 @@ export function ReviewPanel({ pid }: { pid: string }) {
               <li
                 key={label}
                 className={cn(
-                  "inline-flex items-center gap-1 text-[11px] leading-4",
+                  "inline-flex items-center gap-1 text-[12px] leading-4",
                   on ? "font-semibold text-ink" : done ? "text-muted" : "text-faint",
                 )}
               >
@@ -152,20 +152,20 @@ export function ReviewPanel({ pid }: { pid: string }) {
 
         {review.step === "reading" && (
           <div className="flex flex-col gap-2.5 rounded-[8px] border border-line p-4">
-            <div className="flex items-center gap-2 text-[13px]">
+            <div className="flex items-center gap-2 text-[14px]">
               <span className="font-medium">자료 읽는 중</span>
               <span className="flex-1" />
-              <span className="text-[12px] text-ok">파일 저장됨</span>
+              <span className="text-[13px] text-ok">파일 저장됨</span>
             </div>
             <Indeterminate />
-            <p className="text-[12px] text-muted">진행률을 알 수 없어 표시하지 않아요.</p>
+            <p className="text-[13px] text-muted">진행률을 알 수 없어 표시하지 않아요.</p>
           </div>
         )}
 
         {review.step === "pick-target" && (
           <div className="flex flex-col gap-2.5 rounded-[8px] border border-line p-4">
             <div className="font-semibold">자료함에 추가했어요</div>
-            <p className="text-[13px] leading-5 text-muted">
+            <p className="text-[14px] leading-5 text-muted">
               연결 대상을 고르세요. 나중에 골라도 자료는 그대로 남아요.
             </p>
             <div className="flex flex-col gap-1">
@@ -177,11 +177,11 @@ export function ReviewPanel({ pid }: { pid: string }) {
                     type="button"
                     aria-label={`${KIND[kindOf(n)].ko} ${n.id} ${nodeTitle(n)}`}
                     onClick={() => useUi.getState().patchReview({ targetId: n.id, step: "consent" })}
-                    className="flex h-10 items-center gap-2 rounded-[6px] border border-line bg-surface px-3 text-left text-[13px] hover:border-brand hover:bg-wash"
+                    className="flex h-10 items-center gap-2 rounded-[6px] border border-line bg-surface px-3 text-left text-[14px] hover:border-brand hover:bg-wash"
                   >
                     <Mono>{n.id}</Mono>
                     <span className="min-w-0 flex-1 truncate">{nodeTitle(n)}</span>
-                    <span className="shrink-0 text-[12px] text-muted">{KIND[kindOf(n)].ko}</span>
+                    <span className="shrink-0 text-[13px] text-muted">{KIND[kindOf(n)].ko}</span>
                   </button>
                 ))}
             </div>
@@ -199,17 +199,17 @@ export function ReviewPanel({ pid }: { pid: string }) {
         {review.step === "consent" && (
           <div className="flex flex-col gap-3 rounded-[8px] border border-line p-4 animate-fade-up">
             <div className="font-semibold">근거 후보를 찾을까요?</div>
-            <p className="text-[13px] leading-5 text-muted">
+            <p className="text-[14px] leading-5 text-muted">
               원문이 외부 AI로 전송돼요. 첨부만 유지하면 나중에 원문에서 직접 고를 수 있어요.
             </p>
             {target && (
-              <div className="flex items-center gap-2 rounded-[6px] bg-wash px-3 py-2 text-[13px]">
+              <div className="flex items-center gap-2 rounded-[6px] bg-wash px-3 py-2 text-[14px]">
                 <Mono>{target.id}</Mono>
                 <span className="min-w-0 flex-1 truncate">{nodeTitle(target)}</span>
               </div>
             )}
             {ui.aiOff && (
-              <p className="text-[12px] leading-[18px] text-warn">
+              <p className="text-[13px] leading-[19px] text-warn">
                 AI가 연결되지 않아 후보 찾기를 사용할 수 없어요.
               </p>
             )}
@@ -224,9 +224,9 @@ export function ReviewPanel({ pid }: { pid: string }) {
 
         {review.step === "analyzing" && (
           <div className="flex flex-col gap-2.5 rounded-[8px] border border-line p-4">
-            <div className="text-[13px] font-medium">근거 후보를 찾는 중</div>
+            <div className="text-[14px] font-medium">근거 후보를 찾는 중</div>
             <Indeterminate />
-            <p className="text-[12px] text-muted">
+            <p className="text-[13px] text-muted">
               찾은 인용은 원문과 한 번 더 대조해요. 대조에 실패하면 승인할 수 없게 표시돼요.
             </p>
           </div>
@@ -234,7 +234,7 @@ export function ReviewPanel({ pid }: { pid: string }) {
 
         {review.step === "attached" && (
           <div className="flex flex-col gap-2.5 rounded-[8px] border border-line p-4">
-            <p className="text-[13px] leading-5">첨부만 유지했어요. 원문에서 직접 근거를 고를 수 있어요.</p>
+            <p className="text-[14px] leading-5">첨부만 유지했어요. 원문에서 직접 근거를 고를 수 있어요.</p>
             <div className="flex gap-2">
               <Btn onClick={() => useUi.getState().patchReview({ step: "source", backTo: "attached" })}>
                 원문 열기
@@ -250,7 +250,7 @@ export function ReviewPanel({ pid }: { pid: string }) {
           <>
             {candidates.length === 0 && (
               <div className="flex flex-col items-start gap-2.5 rounded-[8px] border border-dashed border-line p-4">
-                <p className="text-[13px] leading-5">
+                <p className="text-[14px] leading-5">
                   관련 근거를 찾지 못했어요. 원문에서 직접 선택할 수 있어요.
                 </p>
                 <Btn onClick={() => useUi.getState().patchReview({ step: "source", backTo: "candidates" })}>
@@ -276,7 +276,7 @@ export function ReviewPanel({ pid }: { pid: string }) {
                           : "border-line",
                   )}
                 >
-                  <div className="flex items-center gap-2 text-[12px] leading-4">
+                  <div className="flex items-center gap-2 text-[13px] leading-4">
                     <span className="font-semibold">근거 후보</span>
                     <Badge tone={c.state === "approved" ? "ok" : c.mismatch ? "danger" : "warn"}>
                       {c.state === "approved" ? "승인됨" : c.state === "excluded" ? "제외됨" : "미확정"}
@@ -288,15 +288,15 @@ export function ReviewPanel({ pid }: { pid: string }) {
                   </div>
 
                   <div className="flex gap-2 rounded-[6px] bg-wash px-3 py-2.5">
-                    <span className="shrink-0 font-serif text-[18px] leading-[22px] text-faint">“</span>
-                    <p className="kr text-[13px] leading-[22px] text-ink">
+                    <span className="shrink-0 font-serif text-[19px] leading-[23px] text-faint">“</span>
+                    <p className="kr text-[14px] leading-[23px] text-ink">
                       {c.quote}
-                      <span className="ml-1.5 text-[11px] text-muted">원문 인용</span>
+                      <span className="ml-1.5 text-[12px] text-muted">원문 인용</span>
                     </p>
                   </div>
 
                   {c.mismatch && (
-                    <div className="flex items-center gap-2.5 text-[12px] leading-4 text-danger">
+                    <div className="flex items-center gap-2.5 text-[13px] leading-4 text-danger">
                       <Dot tone="danger" />
                       <span className="flex-1">제안된 인용을 원문에서 확인하지 못했어요.</span>
                       <Btn
@@ -314,11 +314,11 @@ export function ReviewPanel({ pid }: { pid: string }) {
                     <FieldLabel>
                       해석 <span className="font-normal text-faint">AI 작성</span>
                     </FieldLabel>
-                    <p className="kr text-[13px] leading-5 text-ink">{c.claim}</p>
-                    <p className="kr text-[13px] leading-5 text-muted">{c.limit}</p>
+                    <p className="kr text-[14px] leading-5 text-ink">{c.claim}</p>
+                    <p className="kr text-[14px] leading-5 text-muted">{c.limit}</p>
                   </div>
 
-                  <div className="grid grid-cols-[64px_1fr] items-center gap-x-2.5 gap-y-1.5 text-[13px] leading-5">
+                  <div className="grid grid-cols-[64px_1fr] items-center gap-x-2.5 gap-y-1.5 text-[14px] leading-5">
                     <span className="text-muted">연결 대상</span>
                     <span className="flex min-w-0 items-center gap-1.5">
                       <Mono>{c.targetId}</Mono>
@@ -382,19 +382,19 @@ export function ReviewPanel({ pid }: { pid: string }) {
                   )}
 
                   {c.state === "approved" && (
-                    <div className="flex items-center gap-2 text-[13px] text-ok">
+                    <div className="flex items-center gap-2 text-[14px] text-ok">
                       <Dot tone="ok" />
                       근거 {c.approvedAs}로 추가됨 · 실선 관계 생성
                     </div>
                   )}
 
                   {c.state === "excluded" && (
-                    <div className="flex items-center gap-2 text-[13px] text-muted">
+                    <div className="flex items-center gap-2 text-[14px] text-muted">
                       제외됨
                       <button
                         type="button"
                         onClick={() => store().patchCandidate(pid, c.id, { state: "pending" })}
-                        className="h-6 px-1.5 text-[12px] text-brand"
+                        className="h-6 px-1.5 text-[13px] text-brand"
                       >
                         되돌리기
                       </button>
@@ -417,10 +417,10 @@ export function ReviewPanel({ pid }: { pid: string }) {
                 ← 돌아가기
               </Btn>
               <span className="flex-1" />
-              <span className="text-[12px] text-muted">줄을 눌러 직접 근거 선택</span>
+              <span className="text-[13px] text-muted">줄을 눌러 직접 근거 선택</span>
             </div>
 
-            <div className="overflow-hidden rounded-[8px] border border-line font-mono text-[13px] leading-[22px]">
+            <div className="overflow-hidden rounded-[8px] border border-line font-mono text-[14px] leading-[23px]">
               {lines.map((text, i) => {
                 const n = i + 1;
                 const on = review.pickedLine === n;
@@ -444,18 +444,18 @@ export function ReviewPanel({ pid }: { pid: string }) {
 
             {review.pickedLine && (
               <div className="flex flex-col gap-2 rounded-[6px] border border-line bg-wash-2 p-3">
-                <p className="text-[13px] leading-5">
+                <p className="text-[14px] leading-5">
                   줄 {review.pickedLine}을 근거 인용으로 골랐어요.
                   {target ? (
                     <>
                       {" "}
-                      연결 대상: <span className="font-mono text-[12px]">{target.id}</span>
+                      연결 대상: <span className="font-mono text-[13px]">{target.id}</span>
                     </>
                   ) : (
                     " 연결 대상을 먼저 골라주세요."
                   )}
                 </p>
-                <div className="grid grid-cols-[48px_1fr] items-center gap-x-2.5 text-[13px]">
+                <div className="grid grid-cols-[48px_1fr] items-center gap-x-2.5 text-[14px]">
                   <span className="text-muted">관계</span>
                   <Select value={pickedRel} onValueChange={(v) => setPickedRel(v as EdgeType)}>
                     <SelectTrigger size="sm" className="w-auto justify-self-start">
@@ -515,7 +515,7 @@ export function ReviewPanel({ pid }: { pid: string }) {
         )}
       </div>
 
-      <p className="border-t border-line px-5 py-2.5 text-[12px] leading-4 text-muted">
+      <p className="border-t border-line px-5 py-2.5 text-[13px] leading-4 text-muted">
         점선은 후보, 실선은 승인한 관계예요. 점선을 눌러도 승인되지 않아요.
       </p>
     </SidePanel>

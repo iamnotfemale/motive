@@ -490,9 +490,9 @@ export function systemChecks(doc: Doc, project: Project): Check[] {
   ];
 }
 
-export const USER_CHECKS: { key: string; title: string; sub: string }[] = [
-  { key: "criteria", title: "수용 기준", sub: "요구사항마다 완료 판단 기준을 적었나요?" },
-  { key: "risks", title: "열린 질문 인지", sub: "미검증 상태로 진행한다는 것을 알고 있나요?" },
-  { key: "changes", title: "변경 검토", sub: "결정 이후 바뀐 근거를 확인했나요?" },
-  { key: "outscope", title: "제외 범위", sub: "이번에 하지 않을 것을 적었나요?" },
-];
+/**
+ * 사람이 손으로 체크하던 목록은 없앴다. 체크 여부가 문서 내용을 바꾸지 않았고,
+ * 확인했다는 표시만 남아 오히려 검증된 것처럼 읽혔다.
+ * 남은 확인 항목은 systemChecks 와 detectIssues 가 사실로 보여준다.
+ */
+export const USER_CHECKS: { key: string; title: string; sub: string }[] = [];

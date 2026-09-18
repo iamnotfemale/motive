@@ -22,6 +22,7 @@ import { ColdStartPanel } from "@/components/panels/ColdStartPanel";
 import { RefinePanel } from "@/components/panels/RefinePanel";
 import { IssuePanel } from "@/components/panels/IssuePanel";
 import { CommandMenu } from "@/components/CommandMenu";
+import { WideEditor } from "@/components/WideEditor";
 import { extractFile } from "@/lib/extract";
 import { summarize } from "@/lib/issues";
 import { type Kind, kindOf } from "@/lib/labels";
@@ -95,6 +96,7 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
           name: file.name,
           text: "",
           state: "reading",
+          attachedTo: targetId,
           createdAt: new Date().toISOString(),
         };
         store().addSource(pid, source);
@@ -142,6 +144,28 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
     [pid, store],
   );
 
+  const deleteSelected = useCallback(() => {
+    const d = useDoc.getState().docs[pid];
+    const sel = useUi.getState().sel;
+    const nodes = sel.filter((id) => d?.nodes.some((n) => n.id === id));
+    if (!nodes.length) return;
+    for (const id of nodes) store().deleteNode(pid, id);
+    useUi.getState().select([]);
+    useUi.getState().closePanel();
+    flashSaved();
+    toast(`${nodes.length}개 블록을 지웠어요`, { description: "⌘Z 로 되돌릴 수 있어요" });
+  }, [pid, store]);
+
+  const forkSelection = useCallback(() => {
+    const sel = useUi.getState().sel;
+    if (sel.length < 2) return;
+    const name = (project?.name ?? "프로젝트") + " — 갈래";
+    const npid = store().createProjectFrom(pid, sel, name);
+    if (!npid) return toast("새 그래프를 만들지 못했어요.");
+    toast("고른 블록으로 새 그래프를 만들었어요", { description: "원본은 그대로 남아 있어요" });
+    router.push(`/p/${npid}`);
+  }, [pid, store, project, router]);
+
   /* ── 단계별 행동 ── */
   const runAction = useCallback(
     (key: ActionKey) => {
@@ -159,6 +183,8 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
           return void addCard("claim", { from: "P-01", edge: "investigates" });
         case "add-question":
           return void addCard("question", { from: node?.id ?? "P-01", edge: "investigates" });
+        case "add-note":
+          return void addCard("note");
         case "add-solution":
           return void addCard("solution");
         case "add-requirement": {
@@ -292,16 +318,9 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
       if (typing) return;
 
       if (e.key === "Delete" || e.key === "Backspace") {
-        const sel = useUi.getState().sel;
-        const d = useDoc.getState().docs[pid];
-        const nodes = sel.filter((id) => d?.nodes.some((n) => n.id === id));
-        if (!nodes.length) return;
+        if (!useUi.getState().sel.length) return;
         e.preventDefault();
-        for (const id of nodes) store().deleteNode(pid, id);
-        useUi.getState().select([]);
-        useUi.getState().closePanel();
-        flashSaved();
-        toast(`${nodes.length}개 블록을 지웠어요`, { description: "⌘Z 로 되돌릴 수 있어요" });
+        deleteSelected();
         return;
       }
 
@@ -311,14 +330,14 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [pid, store]);
+  }, [pid, store, deleteSelected]);
 
-  if (!hydrated) return <div className="p-10 text-[13px] text-muted">불러오는 중…</div>;
+  if (!hydrated) return <div className="p-10 text-[14px] text-muted">불러오는 중…</div>;
   if (!project || !doc)
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3">
-        <p className="text-[13px] text-muted">이 프로젝트를 찾을 수 없어요.</p>
-        <button onClick={() => router.push("/")} className="text-[13px] text-brand underline">
+        <p className="text-[14px] text-muted">이 프로젝트를 찾을 수 없어요.</p>
+        <button onClick={() => router.push("/")} className="text-[14px] text-brand underline">
           처음으로
         </button>
       </div>
@@ -345,7 +364,9 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
         <LeftRail
           phase={phase}
           open={ui.leftPanel}
+          grid={ui.grid}
           onOpen={(p) => useUi.getState().openLeft(p)}
+          onGrid={(v) => useUi.getState().setGrid(v)}
           onAction={runAction}
         />
 
@@ -394,17 +415,24 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
             addCard("note", { at });
             useUi.getState().setTool("select");
           }}
+          onDeleteSelected={deleteSelected}
+          onFork={forkSelection}
+          onAskAi={(ids) => {
+            useUi.getState().select(ids.slice(0, 1));
+            useUi.getState().openPanel("inspector");
+            toast("카드별 AI 액션은 다음 단계예요", {
+              description: "지금은 자료 검토와 콜드스타트에서만 AI를 부릅니다",
+            });
+          }}
         />
 
         <Toolbar
           tool={ui.tool}
           zoom={ui.zoom}
           phase={phase}
-          grid={ui.grid}
           canUndo={doc.undo.length > 0}
           canRedo={doc.redo.length > 0}
           onTool={(t) => useUi.getState().setTool(t)}
-          onGrid={(v) => useUi.getState().setGrid(v)}
           onUndo={() => {
             if (!store().undoStep(pid)) toast("되돌릴 변경이 없어요");
           }}
@@ -412,11 +440,9 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
             if (!store().redoStep(pid)) toast("다시 실행할 변경이 없어요");
           }}
           onTidy={() => toast("정리는 다음 단계예요. 지금은 배치를 건드리지 않아요.")}
-          onZoom={(z) => useUi.getState().setZoom(z)}
-          onFit={() => {
-            useUi.getState().setZoom(1);
-            useUi.getState().setPan({ x: 0, y: 0 });
-          }}
+          onZoom={(z) => useUi.getState().requestZoom(z)}
+          hasSelection={ui.sel.length > 0}
+          onFit={() => useUi.getState().requestFit()}
           onAction={runAction}
           onAddKind={(kind) => addCard(kind)}
           onFiles={(f) => void addFiles(f)}
@@ -440,6 +466,8 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
           />
         )}
       </div>
+
+      <AnimatePresence>{ui.wide && <WideEditor key="wide" pid={pid} />}</AnimatePresence>
 
       <CommandMenu pid={pid} onAdd={(k) => addCard(k)} />
     </div>

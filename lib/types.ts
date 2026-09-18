@@ -66,11 +66,19 @@ export type EdgeType =
   | "produces" // UI: 채택 | 구현 범위 | 보류 | 기각
   | "related"; // UI: 관련
 
+/** 카드의 어느 변에 꽂혔는지. 연결선이 그 변에서 시작하고 끝난다. */
+export type Side = "top" | "right" | "bottom" | "left";
+
 export interface SemanticEdge {
   id: string;
   from: string;
   to: string;
   type: EdgeType;
+  fromSide?: Side;
+  toSide?: Side;
+  /** 선 모양. 의미가 아니라 보기 설정이다. */
+  shape?: "curve" | "straight" | "elbow";
+  dashed?: boolean;
   /** produces 전용. 기각/보류를 내부에서 분리 (BUILD_PLAN §1.5). */
   rejected?: boolean;
   hold?: boolean;
@@ -90,6 +98,8 @@ export interface Source {
   state: SourceState;
   /** 합성 자료임을 화면에 표시하기 위한 태그 (브리프 §7). */
   tag?: string;
+  /** 어느 카드에 떨어뜨린 자료인지. 그 카드 아래에 목록으로 붙는다. */
+  attachedTo?: string;
   createdAt: string;
 }
 

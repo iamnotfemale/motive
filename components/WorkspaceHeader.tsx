@@ -54,7 +54,7 @@ export function WorkspaceHeader(p: Props) {
       <button
         type="button"
         onClick={() => router.push("/")}
-        className="text-[13px] font-semibold tracking-[-0.01em] hover:text-muted"
+        className="text-[14px] font-semibold tracking-[-0.01em] hover:text-muted"
       >
         Motive
       </button>
@@ -82,7 +82,7 @@ export function WorkspaceHeader(p: Props) {
                 onClick={() => p.onPhase(ph.key)}
                 aria-current={on ? "page" : undefined}
                 className={cn(
-                  "relative h-13 px-0.5 text-[13px] font-medium transition-colors duration-[120ms]",
+                  "relative h-13 px-0.5 text-[14px] font-medium transition-colors duration-[120ms]",
                   on ? "text-ink" : "text-muted hover:text-ink",
                 )}
               >
@@ -104,7 +104,7 @@ export function WorkspaceHeader(p: Props) {
 
       <span
         className={cn(
-          "inline-flex items-center gap-1.5 text-[12px] leading-4 whitespace-nowrap",
+          "inline-flex items-center gap-1.5 text-[13px] leading-4 whitespace-nowrap",
           save.tone === "danger" ? "text-danger" : save.tone === "ok" ? "text-ok" : "text-muted",
         )}
       >

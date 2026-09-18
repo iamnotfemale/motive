@@ -23,12 +23,12 @@ export const btn = cva(
         danger: "border border-line bg-surface text-danger hover:bg-wash",
       },
       size: {
-        lg: "h-9 px-4 text-[13px]",
-        md: "h-8 px-3 text-[13px]",
-        sm: "h-7 px-2.5 text-[13px]",
-        xs: "h-6 px-2 text-[12px]",
-        icon: "h-7 w-7 px-0 text-[13px]",
-        "icon-sm": "h-6 w-6 px-0 text-[12px]",
+        lg: "h-9 px-4 text-[14px]",
+        md: "h-8 px-3 text-[14px]",
+        sm: "h-7 px-2.5 text-[14px]",
+        xs: "h-6 px-2 text-[13px]",
+        icon: "h-7 w-7 px-0 text-[14px]",
+        "icon-sm": "h-6 w-6 px-0 text-[13px]",
       },
     },
     defaultVariants: { variant: "outline", size: "md" },
@@ -101,7 +101,7 @@ export function StatusText({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 text-[12px] leading-4 font-medium",
+        "inline-flex items-center gap-1.5 text-[13px] leading-4 font-medium",
         TONE_TEXT[tone],
         className,
       )}
@@ -127,7 +127,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex h-4 shrink-0 items-center rounded-[4px] px-1.5 text-[11px] leading-4 whitespace-nowrap",
+        "inline-flex h-4 shrink-0 items-center rounded-[4px] px-1.5 text-[12px] leading-4 whitespace-nowrap",
         outline ? "border border-line bg-surface text-muted" : "bg-wash text-muted",
         tone === "warn" && "bg-[#fffaeb] text-warn",
         tone === "ok" && "bg-[#f4f4f5] text-ok",
@@ -141,7 +141,7 @@ export function Badge({
 }
 
 export const Mono = ({ children, className }: { children: React.ReactNode; className?: string }) => (
-  <span className={cn("font-mono text-[11px] leading-4 text-faint", className)}>{children}</span>
+  <span className={cn("font-mono text-[12px] leading-4 text-faint", className)}>{children}</span>
 );
 
 /** 진행률을 알 수 없을 때. 가짜 퍼센트를 만들지 않는다. */
@@ -166,7 +166,7 @@ export function Spinner({ className }: { className?: string }) {
 
 /** 섹션 제목. 패널 안에서 반복된다. */
 export const FieldLabel = ({ children, className }: { children: React.ReactNode; className?: string }) => (
-  <div className={cn("text-[12px] leading-4 font-semibold text-muted", className)}>{children}</div>
+  <div className={cn("text-[13px] leading-4 font-semibold text-muted", className)}>{children}</div>
 );
 
 /** 상태 배너 — 색 + 텍스트 + 실제 다음 행동 버튼. 닫아도 상태가 해결되지 않는다. */
@@ -184,7 +184,7 @@ export function Notice({
   return (
     <div
       className={cn(
-        "flex items-center gap-2.5 rounded-[6px] border border-line bg-wash-2 px-3 py-2.5 text-[13px] leading-[18px]",
+        "flex items-center gap-2.5 rounded-[6px] border border-line bg-wash-2 px-3 py-2.5 text-[14px] leading-[19px]",
         className,
       )}
     >

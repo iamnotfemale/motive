@@ -8,6 +8,7 @@ export type ActionKey =
   | "refine"
   | "add-claim"
   | "add-question"
+  | "add-note"
   | "coldstart"
   | "attach"
   | "url"
@@ -34,6 +35,7 @@ const A: Record<ActionKey, ActionDef> = {
   refine: { key: "refine", ko: "문제 다듬기", icon: "Sparkles" },
   "add-claim": { key: "add-claim", ko: "가설 추가", icon: "Lightbulb", hint: "H" },
   "add-question": { key: "add-question", ko: "검토 질문", icon: "CircleQuestionMark", hint: "C" },
+  "add-note": { key: "add-note", ko: "생각 추가", icon: "StickyNote", hint: "N" },
   coldstart: { key: "coldstart", ko: "불확실한 것부터", icon: "ScanSearch" },
   attach: { key: "attach", ko: "자료 첨부", icon: "Paperclip" },
   url: { key: "url", ko: "주소 읽기", icon: "Link2" },
@@ -51,8 +53,8 @@ const A: Record<ActionKey, ActionDef> = {
 
 /** 아래 도구 막대 가운데에 붙는 단계별 핵심 행동. 3개를 넘기지 않는다. */
 export const DOCK_ACTIONS: Record<Phase, ActionDef[]> = {
-  define: [A["add-claim"], A["add-question"], A.coldstart],
-  explore: [A.attach, A.url, A["find-evidence"]],
+  define: [A["add-claim"], A["add-note"]],
+  explore: [A.attach, A["find-evidence"]],
   review: [A.conflicts, A.issues, A["check-quotes"]],
   decide: [A["add-solution"], A["make-decision"], A["add-requirement"]],
   handoff: [A.handoff, A.export],

@@ -205,7 +205,7 @@ export function DecisionPanel({ pid }: { pid: string }) {
   return (
     <SidePanel testId="decision">
       <div className="flex items-center gap-2 border-b border-line px-5 py-4">
-        <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-muted">
+        <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-muted">
           <TypeIcon d={KIND.decision.icon} />
           결정
         </span>
@@ -220,8 +220,8 @@ export function DecisionPanel({ pid }: { pid: string }) {
           <FieldLabel>선택한 해결안</FieldLabel>
           <div className="flex items-start gap-2.5 rounded-[6px] border border-line p-3">
             <Mono className="mt-0.5">{adopted.id}</Mono>
-            <span className="kr flex-1 text-[13px] leading-5">{nodeTitle(adopted)}</span>
-            {confirmed && <span className="shrink-0 text-[12px] text-ok">채택</span>}
+            <span className="kr flex-1 text-[14px] leading-5">{nodeTitle(adopted)}</span>
+            {confirmed && <span className="shrink-0 text-[13px] text-ok">채택</span>}
           </div>
         </div>
 
@@ -236,21 +236,21 @@ export function DecisionPanel({ pid }: { pid: string }) {
                 rows={3}
                 onChange={(e) => setReason(e.target.value)}
                 placeholder="왜 이 해결안을 골랐나요?"
-                className="kr w-full resize-none rounded-[6px] border border-line bg-surface px-3 py-2.5 text-[13px] leading-[22px] transition-[border-color,box-shadow] duration-[120ms] focus:border-brand focus:shadow-[0_0_0_3px_#f4f4f5]"
+                className="kr w-full resize-none rounded-[6px] border border-line bg-surface px-3 py-2.5 text-[14px] leading-[23px] transition-[border-color,box-shadow] duration-[120ms] focus:border-brand focus:shadow-[0_0_0_3px_#f4f4f5]"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
               <FieldLabel>기각 대안</FieldLabel>
               {alternatives.length === 0 && (
-                <p className="rounded-[6px] border border-dashed border-line p-3 text-center text-[13px] text-muted">
+                <p className="rounded-[6px] border border-dashed border-line p-3 text-center text-[14px] text-muted">
                   검토한 다른 해결안이 없어요. 대안 없이 정한 결정으로 남아요.
                 </p>
               )}
               {alternatives.map((a) => (
                 <div key={a.id} className="flex items-center gap-2.5 rounded-[6px] border border-line p-3">
                   <Mono>{a.id}</Mono>
-                  <span className="kr min-w-0 flex-1 text-[13px] leading-5">{nodeTitle(a)}</span>
+                  <span className="kr min-w-0 flex-1 text-[14px] leading-5">{nodeTitle(a)}</span>
                   <Select
                     value={altState[a.id] ?? "none"}
                     onValueChange={(v) =>
@@ -281,9 +281,9 @@ export function DecisionPanel({ pid }: { pid: string }) {
                 rows={2}
                 onChange={(e) => setRevisit(e.target.value)}
                 placeholder="무엇이 나오면 이 결정을 다시 보나요?"
-                className="kr w-full resize-none rounded-[6px] border border-line bg-surface px-3 py-2.5 text-[13px] leading-[22px] focus:border-brand focus:shadow-[0_0_0_3px_#f4f4f5]"
+                className="kr w-full resize-none rounded-[6px] border border-line bg-surface px-3 py-2.5 text-[14px] leading-[23px] focus:border-brand focus:shadow-[0_0_0_3px_#f4f4f5]"
               />
-              <span className="text-[12px] text-muted">줄마다 하나의 조건</span>
+              <span className="text-[13px] text-muted">줄마다 하나의 조건</span>
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -298,7 +298,7 @@ export function DecisionPanel({ pid }: { pid: string }) {
                     onCheckedChange={(v) => setRisks((s) => ({ ...s, [q.id]: Boolean(v) }))}
                     className="mt-0.5"
                   />
-                  <span className="flex flex-col gap-0.5 text-[13px] leading-[18px]">
+                  <span className="flex flex-col gap-0.5 text-[14px] leading-[19px]">
                     <span className="kr">
                       <Mono className="mr-1.5">{q.id}</Mono>
                       {nodeTitle(q)}
@@ -315,7 +315,7 @@ export function DecisionPanel({ pid }: { pid: string }) {
                   value={newQ}
                   onChange={(e) => setNewQ(e.target.value)}
                   placeholder="새 열린 질문 남기기"
-                  className="flex-1 border-0 bg-transparent text-[13px] text-ink"
+                  className="flex-1 border-0 bg-transparent text-[14px] text-ink"
                 />
               </div>
             </div>
@@ -326,7 +326,7 @@ export function DecisionPanel({ pid }: { pid: string }) {
       <div className="flex items-center gap-2 border-t border-line px-5 py-3">
         {confirmed ? (
           <>
-            <span className="inline-flex flex-1 items-center gap-1.5 text-[12px] text-ok">
+            <span className="inline-flex flex-1 items-center gap-1.5 text-[13px] text-ok">
               <Dot tone="ok" />
               결정을 확정했어요
             </span>
@@ -336,7 +336,7 @@ export function DecisionPanel({ pid }: { pid: string }) {
           </>
         ) : (
           <>
-            <span className="flex-1 text-[12px] text-muted">초안은 저장되지 않아요</span>
+            <span className="flex-1 text-[13px] text-muted">초안은 저장되지 않아요</span>
             <Btn onClick={() => useUi.getState().closePanel()}>나중에</Btn>
             <Btn variant="ink" onClick={confirm}>
               결정 확정
@@ -370,12 +370,12 @@ function ConfirmedBody({ decision }: { decision: NonNullable<ReturnType<typeof f
         .map((s) => (
           <div key={s.h} className="flex flex-col gap-1.5">
             <FieldLabel>{s.h}</FieldLabel>
-            <p className="kr rounded-[6px] border border-line bg-wash-2 px-3 py-2.5 text-[13px] leading-[22px] whitespace-pre-wrap">
+            <p className="kr rounded-[6px] border border-line bg-wash-2 px-3 py-2.5 text-[14px] leading-[23px] whitespace-pre-wrap">
               {s.body || "(아직 없음)"}
             </p>
           </div>
         ))}
-      <p className="text-[12px] leading-[18px] text-muted">
+      <p className="text-[13px] leading-[19px] text-muted">
         확정한 결정은 카드에서 편집해요. 여기서는 읽기만 해요.
       </p>
       <span className="hidden">{serializeMd(parsed).length}</span>
@@ -414,9 +414,9 @@ function RequirementForm({
           <div key={r.id} className="flex flex-col gap-2 rounded-[6px] border border-line p-3">
             <div className="flex items-start gap-2">
               <Mono className="mt-0.5">{r.id}</Mono>
-              <span className="kr flex-1 text-[13px] leading-5">{nodeTitle(r)}</span>
+              <span className="kr flex-1 text-[14px] leading-5">{nodeTitle(r)}</span>
             </div>
-            <div className="flex items-center gap-2 text-[12px] text-muted">
+            <div className="flex items-center gap-2 text-[13px] text-muted">
               <span>수용 기준 {count}</span>
               <span className="flex-1" />
               <Select
@@ -441,22 +441,22 @@ function RequirementForm({
 
       <div className="flex flex-col gap-2.5 rounded-[6px] border border-line bg-wash-2 p-3">
         <label className="flex flex-col gap-1">
-          <span className="text-[13px] font-medium">사용자가 무엇을 할 수 있어야 하나요?</span>
+          <span className="text-[14px] font-medium">사용자가 무엇을 할 수 있어야 하나요?</span>
           <input
             value={action}
             onChange={(e) => onAction(e.target.value)}
-            className="h-8 rounded-[6px] border border-line bg-surface px-2.5 text-[13px] focus:border-brand"
+            className="h-8 rounded-[6px] border border-line bg-surface px-2.5 text-[14px] focus:border-brand"
           />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-[13px] font-medium">완료됐다고 판단할 기준은 무엇인가요?</span>
+          <span className="text-[14px] font-medium">완료됐다고 판단할 기준은 무엇인가요?</span>
           <textarea
             value={criteria}
             rows={2}
             onChange={(e) => onCriteria(e.target.value)}
-            className="kr resize-none rounded-[6px] border border-line bg-surface px-2.5 py-2 text-[13px] leading-5 focus:border-brand"
+            className="kr resize-none rounded-[6px] border border-line bg-surface px-2.5 py-2 text-[14px] leading-5 focus:border-brand"
           />
-          <span className="text-[12px] text-muted">줄마다 하나의 기준</span>
+          <span className="text-[13px] text-muted">줄마다 하나의 기준</span>
         </label>
         <div className="flex justify-end">
           <Btn variant="ink" onClick={onAdd}>
@@ -465,7 +465,7 @@ function RequirementForm({
         </div>
       </div>
 
-      <p className={cn("text-[12px] leading-[18px] text-muted")}>
+      <p className={cn("text-[13px] leading-[19px] text-muted")}>
         요구사항이 생겨도 시장 검증이나 개발 완료를 뜻하지 않아요. 미검증 상태는 인계 문서에 그대로 남아요.
       </p>
       <span className="hidden">{decisionId}</span>

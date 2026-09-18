@@ -18,12 +18,18 @@ export type BlockType =
   | "code"
   | "divider";
 
+/** 코드 블록에서 고를 수 있는 언어. 지금은 둘만 쓴다. */
+export const CODE_LANGS = ["python", "c"] as const;
+export type CodeLang = (typeof CODE_LANGS)[number];
+
 export interface Block {
   id: string;
   type: BlockType;
   text: string;
   /** check 전용 */
   checked?: boolean;
+  /** code 전용 */
+  lang?: CodeLang;
 }
 
 export interface BlockMeta {
@@ -57,6 +63,7 @@ export const emptyBlock = (type: BlockType = "text"): Block => ({
   type,
   text: "",
   ...(type === "check" ? { checked: false } : {}),
+  ...(type === "code" ? { lang: "python" as CodeLang } : {}),
 });
 
 /** md 본문 → 블록. 첫 `# 제목` 줄은 건너뛴다. */
@@ -65,12 +72,13 @@ export function mdToBlocks(md: string): Block[] {
   const blocks: Block[] = [];
   let titleSkipped = false;
   let inCode = false;
+  let codeLang: CodeLang = "python";
   let codeBuf: string[] = [];
 
   for (const raw of lines) {
     if (inCode) {
       if (raw.trim().startsWith("```")) {
-        blocks.push({ id: newBlockId(), type: "code", text: codeBuf.join("\n") });
+        blocks.push({ id: newBlockId(), type: "code", text: codeBuf.join("\n"), lang: codeLang });
         codeBuf = [];
         inCode = false;
       } else codeBuf.push(raw);
@@ -82,6 +90,8 @@ export function mdToBlocks(md: string): Block[] {
       continue;
     }
     if (raw.trim().startsWith("```")) {
+      const tag = raw.trim().slice(3).trim().toLowerCase();
+      codeLang = (CODE_LANGS as readonly string[]).includes(tag) ? (tag as CodeLang) : "python";
       inCode = true;
       continue;
     }
@@ -125,7 +135,8 @@ export function mdToBlocks(md: string): Block[] {
     blocks.push({ id: newBlockId(), type: "text", text: raw });
   }
 
-  if (inCode && codeBuf.length) blocks.push({ id: newBlockId(), type: "code", text: codeBuf.join("\n") });
+  if (inCode && codeBuf.length)
+    blocks.push({ id: newBlockId(), type: "code", text: codeBuf.join("\n"), lang: codeLang });
 
   return blocks;
 }
@@ -146,7 +157,7 @@ export function blocksToMd(title: string, blocks: Block[]): string {
       case "quote":
         return "> " + b.text;
       case "code":
-        return "```\n" + b.text + "\n```";
+        return "```" + (b.lang ?? "python") + "\n" + b.text + "\n```";
       case "divider":
         return "---";
       default:

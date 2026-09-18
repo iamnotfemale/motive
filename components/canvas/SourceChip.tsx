@@ -97,11 +97,11 @@ export const SourceChip = memo(function SourceChip(p: Props) {
           <span className="flex size-7 shrink-0 items-center justify-center rounded-[6px] bg-wash text-muted">
             <Icon className="size-4" />
           </span>
-          <span className="min-w-0 flex-1 truncate font-mono text-[12px] leading-4 text-ink" title={source.name}>
+          <span className="min-w-0 flex-1 truncate font-mono text-[13px] leading-4 text-ink" title={source.name}>
             {source.name}
           </span>
         </div>
-        <div className="flex items-center gap-2 text-[11px] leading-4 text-muted">
+        <div className="flex items-center gap-2 text-[12px] leading-4 text-muted">
           <span className="inline-flex items-center gap-1.5">
             <Dot tone={state.tone} />
             {state.ko}

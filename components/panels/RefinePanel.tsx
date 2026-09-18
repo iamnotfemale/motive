@@ -60,7 +60,7 @@ export function RefinePanel({ pid }: { pid: string }) {
       <div className="flex flex-1 flex-col gap-4 overflow-auto p-5">
         <div className="flex flex-col gap-1.5">
           <FieldLabel>원문</FieldLabel>
-          <p className="kr rounded-[6px] border border-line p-3 text-[13px] leading-[22px]">{original}</p>
+          <p className="kr rounded-[6px] border border-line p-3 text-[14px] leading-[23px]">{original}</p>
         </div>
 
         {busy && <Indeterminate />}
@@ -84,10 +84,10 @@ export function RefinePanel({ pid }: { pid: string }) {
               <FieldLabel>AI 제안</FieldLabel>
               <Badge tone="warn">미확정</Badge>
             </div>
-            <p className="kr rounded-[6px] border border-line bg-wash-2 p-3 text-[13px] leading-[22px]">
+            <p className="kr rounded-[6px] border border-line bg-wash-2 p-3 text-[14px] leading-[23px]">
               {suggestion.statement}
             </p>
-            <p className="kr text-[12px] leading-[18px] text-muted">{suggestion.note}</p>
+            <p className="kr text-[13px] leading-[19px] text-muted">{suggestion.note}</p>
           </div>
         )}
       </div>

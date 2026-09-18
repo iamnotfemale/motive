@@ -5,7 +5,7 @@
  * 보조 패널은 한 번에 하나만 연다 (핸드오프 §6).
  */
 import { create } from "zustand";
-import type { Phase, SaveState } from "./types";
+import type { Phase, SaveState, Side } from "./types";
 
 export type Panel = "inspector" | "review" | "decision" | "refine" | "coldstart" | null;
 
@@ -18,10 +18,12 @@ export type Tool = "select" | "hand" | "frame" | "add";
 /** 카드 테두리에서 끌어 만드는 관계. 놓을 때까지 그래프에 들어가지 않는다. */
 export interface Connecting {
   from: string;
-  side: "top" | "right" | "bottom" | "left";
+  side: Side;
   x: number;
   y: number;
   over: string | null;
+  /** 놓으면 꽂힐 변. 포인터에서 가장 가까운 변을 고른다. */
+  overSide: Side | null;
 }
 export type InspectorTab = "content" | "links" | "sources";
 export type EditMode = "write" | "md";
@@ -62,6 +64,8 @@ export interface ReviewState {
 interface UiState {
   sel: string[];
   selEdge: string | null;
+  /** 범위 선택으로 함께 잡힌 관계선들. */
+  selEdges: string[];
   hover: string | null;
   focusId: string | null;
   panel: Panel;
@@ -84,14 +88,21 @@ interface UiState {
   search: string;
   connecting: Connecting | null;
   grid: boolean;
+  /** 전체 화면 편집기. 노션처럼 본문만 크게 본다. */
+  wide: boolean;
   /** 새 카드를 화면 가운데로 부드럽게 옮겨달라는 요청. */
   center: { id: string; nonce: number } | null;
+  /** 화면 맞춤 요청. 고른 카드가 있으면 그것만, 없으면 전체. */
+  fit: number | null;
+  /** 확대·축소 요청. 부드럽게 옮기기 위해 Canvas 가 받아서 처리한다. */
+  zoomTo: { z: number; nonce: number } | null;
 
   select: (ids: string[]) => void;
   toggleSelect: (id: string) => void;
   setHover: (id: string | null) => void;
   setFocus: (id: string | null) => void;
   selectEdge: (id: string | null) => void;
+  setSelEdges: (ids: string[]) => void;
   openPanel: (p: Panel) => void;
   closePanel: () => void;
   setInspTab: (t: InspectorTab) => void;
@@ -112,7 +123,10 @@ interface UiState {
   setSearch: (q: string) => void;
   setConnecting: (c: Connecting | null) => void;
   setGrid: (v: boolean) => void;
+  setWide: (v: boolean) => void;
   requestCenter: (id: string) => void;
+  requestFit: () => void;
+  requestZoom: (z: number) => void;
   /** Esc — 메뉴 → 관계 → 패널 → 선택 순서로 하나씩 푼다. */
   escape: () => void;
   reset: () => void;
@@ -121,6 +135,7 @@ interface UiState {
 const initial = {
   sel: [] as string[],
   selEdge: null,
+  selEdges: [] as string[],
   hover: null,
   focusId: null,
   panel: null as Panel,
@@ -141,13 +156,16 @@ const initial = {
   search: "",
   connecting: null as Connecting | null,
   grid: true,
+  wide: false,
   center: null as { id: string; nonce: number } | null,
+  fit: null as number | null,
+  zoomTo: null as { z: number; nonce: number } | null,
 };
 
 export const useUi = create<UiState>()((set, get) => ({
   ...initial,
 
-  select: (sel) => set({ sel, selEdge: null }),
+  select: (sel) => set({ sel, selEdge: null, selEdges: [] }),
   toggleSelect: (id) =>
     set((s) => ({
       sel: s.sel.includes(id) ? s.sel.filter((x) => x !== id) : [...s.sel, id],
@@ -155,7 +173,8 @@ export const useUi = create<UiState>()((set, get) => ({
     })),
   setHover: (hover) => set({ hover }),
   setFocus: (focusId) => set({ focusId }),
-  selectEdge: (selEdge) => set({ selEdge, sel: selEdge ? [] : get().sel }),
+  selectEdge: (selEdge) => set({ selEdge, selEdges: [], sel: selEdge ? [] : get().sel }),
+  setSelEdges: (selEdges) => set({ selEdges }),
   openPanel: (panel) => set({ panel }),
   closePanel: () => set({ panel: null }),
   setInspTab: (inspTab) => set({ inspTab }),
@@ -176,10 +195,14 @@ export const useUi = create<UiState>()((set, get) => ({
   setSearch: (search) => set({ search }),
   setConnecting: (connecting) => set({ connecting }),
   setGrid: (grid) => set({ grid }),
+  setWide: (wide) => set({ wide }),
   requestCenter: (id) => set({ center: { id, nonce: Date.now() } }),
+  requestFit: () => set({ fit: Date.now() }),
+  requestZoom: (z) => set({ zoomTo: { z, nonce: Date.now() } }),
 
   escape: () => {
     const s = get();
+    if (s.wide) return set({ wide: false });
     if (s.connecting) return set({ connecting: null });
     if (s.cmdk) return set({ cmdk: false });
     if (s.tool !== "select") return set({ tool: "select" });

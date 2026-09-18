@@ -12,8 +12,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { GripVertical, Plus } from "lucide-react";
 import {
   BLOCK_MENU,
+  CODE_LANGS,
   type Block,
   type BlockType,
+  type CodeLang,
   autoType,
   blocksToMd,
   emptyBlock,
@@ -28,6 +30,19 @@ interface Props {
   md: string;
   onChange: (md: string) => void;
 }
+
+/** 손잡이를 블록 첫 줄 가운데에 맞춘다. 줄 높이가 유형마다 달라서 값을 따로 둔다. */
+const GRIP_TOP: Record<BlockType, string> = {
+  h1: "mt-[7px]",
+  h2: "mt-[5px]",
+  h3: "mt-[4px]",
+  text: "mt-[4px]",
+  list: "mt-[4px]",
+  check: "mt-[4px]",
+  quote: "mt-[4px]",
+  code: "mt-[9px]",
+  divider: "mt-[9px]",
+};
 
 export function BlockEditor({ nodeId, title, md, onChange }: Props) {
   const [blocks, setBlocks] = useState<Block[]>(() => mdToBlocks(md));
@@ -52,7 +67,8 @@ export function BlockEditor({ nodeId, title, md, onChange }: Props) {
     focusNext.current = null;
     const el = refs.current[want.id];
     if (!el) return;
-    el.focus();
+    // preventScroll 이 없으면 브라우저가 조상 요소를 스크롤해 캔버스가 튄다.
+    el.focus({ preventScroll: true });
     const pos = want.at === "start" ? 0 : el.value.length;
     el.setSelectionRange(pos, pos);
   }, [blocks]);
@@ -214,7 +230,7 @@ export function BlockEditor({ nodeId, title, md, onChange }: Props) {
       <button
         type="button"
         onClick={() => commit([emptyBlock()])}
-        className="flex w-full items-center gap-2 rounded-[6px] px-2 py-2 text-left text-[13px] text-faint hover:bg-wash-2"
+        className="flex w-full items-center gap-2 rounded-[6px] px-2 py-2 text-left text-[14px] text-faint hover:bg-wash-2"
       >
         <Plus className="size-3.5" />내용을 입력하세요. <span className="font-mono">/</span> 로 블록을 고를 수 있어요.
       </button>
@@ -243,7 +259,7 @@ export function BlockEditor({ nodeId, title, md, onChange }: Props) {
             dragId === b.id && "opacity-40",
           )}
         >
-          <div className="flex w-6 shrink-0 justify-end pt-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+          <div className="flex w-6 shrink-0 justify-end opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
             <button
               type="button"
               draggable
@@ -253,7 +269,10 @@ export function BlockEditor({ nodeId, title, md, onChange }: Props) {
                 setOverId(null);
               }}
               aria-label="블록 옮기기"
-              className="cursor-grab rounded-[4px] p-0.5 text-faint hover:bg-wash active:cursor-grabbing"
+              className={cn(
+                "cursor-grab rounded-[4px] p-0.5 text-faint hover:bg-wash active:cursor-grabbing",
+                GRIP_TOP[b.type],
+              )}
             >
               <GripVertical className="size-3.5" />
             </button>
@@ -264,7 +283,7 @@ export function BlockEditor({ nodeId, title, md, onChange }: Props) {
               <hr className="border-line" />
             </div>
           ) : (
-            <div className="relative flex min-w-0 flex-1 items-start gap-2">
+            <div className={cn("relative flex min-w-0 flex-1 items-start gap-2", b.type === "code" && "mt-7")}>
               {b.type === "list" && <span className="pt-[3px] text-faint select-none">•</span>}
               {b.type === "check" && (
                 <button
@@ -272,7 +291,7 @@ export function BlockEditor({ nodeId, title, md, onChange }: Props) {
                   onClick={() => patch(b.id, { checked: !b.checked })}
                   aria-label={b.checked ? "완료 해제" : "완료"}
                   className={cn(
-                    "mt-1 flex size-4 shrink-0 items-center justify-center rounded-[4px] border text-[10px] text-white",
+                    "mt-1 flex size-4 shrink-0 items-center justify-center rounded-[4px] border text-[11px] text-white",
                     b.checked ? "border-brand bg-brand" : "border-line bg-surface",
                   )}
                 >
@@ -280,6 +299,23 @@ export function BlockEditor({ nodeId, title, md, onChange }: Props) {
                 </button>
               )}
               {b.type === "quote" && <span className="mt-1 h-[calc(100%-8px)] w-0.5 shrink-0 bg-line" />}
+              {b.type === "code" && (
+                <div className="absolute -top-[26px] left-0 z-10 flex gap-0.5 rounded-t-[6px] border border-b-0 border-line bg-wash px-1 py-0.5">
+                  {CODE_LANGS.map((l) => (
+                    <button
+                      key={l}
+                      type="button"
+                      onClick={() => patch(b.id, { lang: l as CodeLang })}
+                      className={cn(
+                        "h-5 rounded-[4px] px-1.5 font-mono text-[12px]",
+                        (b.lang ?? "python") === l ? "bg-surface text-ink" : "text-muted hover:text-ink",
+                      )}
+                    >
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               <textarea
                 ref={(el) => {
@@ -304,14 +340,14 @@ export function BlockEditor({ nodeId, title, md, onChange }: Props) {
                 }}
                 className={cn(
                   "kr field-sizing-content min-w-0 flex-1 resize-none border-0 bg-transparent p-0 text-ink placeholder:text-faint",
-                  b.type === "h1" && "text-[18px] leading-7 font-semibold",
-                  b.type === "h2" && "text-[15px] leading-6 font-semibold",
-                  b.type === "h3" && "text-[13px] leading-[22px] font-semibold",
+                  b.type === "h1" && "text-[24px] leading-[32px] font-bold tracking-[-0.01em]",
+                  b.type === "h2" && "text-[19px] leading-[28px] font-semibold tracking-[-0.01em]",
+                  b.type === "h3" && "text-[16px] leading-[25px] font-semibold",
                   b.type === "code" &&
-                    "rounded-[6px] bg-wash-2 px-3 py-2 font-mono text-[12px] leading-5",
-                  b.type === "quote" && "text-[13px] leading-[22px] text-muted",
+                    "rounded-b-[6px] bg-wash-2 px-3 py-2 font-mono text-[14px] leading-[21px]",
+                  b.type === "quote" && "text-[15px] leading-[25px] text-muted",
                   (b.type === "text" || b.type === "list" || b.type === "check") &&
-                    "text-[13px] leading-[22px]",
+                    "text-[15px] leading-[25px]",
                   b.checked && "text-muted line-through",
                 )}
               />
@@ -331,7 +367,7 @@ export function BlockEditor({ nodeId, title, md, onChange }: Props) {
       <button
         type="button"
         onClick={() => insertAfter(blocks[blocks.length - 1].id)}
-        className="mt-1 flex items-center gap-1.5 rounded-[6px] px-1.5 py-1.5 text-left text-[13px] text-faint hover:bg-wash-2 hover:text-muted"
+        className="mt-1 flex items-center gap-1.5 rounded-[6px] px-1.5 py-1.5 text-left text-[14px] text-faint hover:bg-wash-2 hover:text-muted"
       >
         <Plus className="size-3.5" />
         블록 추가
@@ -357,23 +393,23 @@ function SlashMenu({
       onMouseDown={(e) => e.preventDefault()}
       className="absolute top-full left-0 z-30 mt-1 w-60 overflow-hidden rounded-[8px] border border-line bg-surface shadow-[0_8px_24px_rgba(24,24,27,.12)] animate-pop-in"
     >
-      <div className="border-b border-line px-3 py-2 text-[12px] text-muted">
+      <div className="border-b border-line px-3 py-2 text-[13px] text-muted">
         블록 찾기{query && <span className="ml-1 text-ink">{query}</span>}
       </div>
       <div className="max-h-64 overflow-auto p-1">
-        {items.length === 0 && <div className="px-2 py-3 text-[13px] text-muted">결과가 없어요.</div>}
+        {items.length === 0 && <div className="px-2 py-3 text-[14px] text-muted">결과가 없어요.</div>}
         {items.map((m) => (
           <button
             key={m.type}
             type="button"
             onClick={() => onPick(m.type)}
-            className="flex w-full items-center gap-2.5 rounded-[6px] px-2 py-1.5 text-left text-[13px] hover:bg-wash"
+            className="flex w-full items-center gap-2.5 rounded-[6px] px-2 py-1.5 text-left text-[14px] hover:bg-wash"
           >
-            <span className="flex w-5 shrink-0 justify-center font-mono text-[11px] text-faint">
+            <span className="flex w-5 shrink-0 justify-center font-mono text-[12px] text-faint">
               {m.type === "text" ? "T" : m.type === "divider" ? "—" : m.hint.slice(0, 3)}
             </span>
             <span className="flex-1">{m.ko}</span>
-            <span className="font-mono text-[11px] text-faint">{m.hint}</span>
+            <span className="font-mono text-[12px] text-faint">{m.hint}</span>
           </button>
         ))}
       </div>

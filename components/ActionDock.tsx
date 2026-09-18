@@ -88,7 +88,7 @@ export function ActionDock(p: DockProps) {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Btn variant="ghost" className="gap-1.5 text-ink hover:text-ink">
-            <span className="text-[15px] text-muted">+</span>
+            <span className="text-[16px] text-muted">+</span>
             블록 추가
           </Btn>
         </DropdownMenuTrigger>
