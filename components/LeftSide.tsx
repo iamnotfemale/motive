@@ -43,7 +43,7 @@ export function LeftRail({
   return (
     <div
       data-ui="rail"
-      className="z-10 flex w-12 shrink-0 flex-col items-center gap-0.5 border-r border-line bg-surface py-2"
+      className="absolute top-5 left-4 z-10 flex w-12 flex-col items-center gap-0.5 rounded-[10px] border border-line bg-surface py-1.5 shadow-[0_2px_12px_rgba(24,24,27,.07)]"
     >
       <RailButton
         label="자료함"
@@ -116,12 +116,12 @@ export function LeftPanelView({
 }) {
   return (
     <motion.aside
-      initial={{ opacity: 0, x: -12 }}
+      initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -12 }}
+      exit={{ opacity: 0, x: -10 }}
       transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
       data-ui="leftpanel"
-      className="z-10 flex w-[272px] shrink-0 flex-col border-r border-line bg-surface"
+      className="absolute top-5 bottom-24 left-[76px] z-10 flex w-[272px] flex-col overflow-hidden rounded-[10px] border border-line bg-surface shadow-[0_6px_24px_rgba(24,24,27,.10)]"
     >
       {panel === "sources" ? (
         <SourcesPanel pid={pid} onFiles={onFiles} />
