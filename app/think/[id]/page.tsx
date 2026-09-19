@@ -102,6 +102,8 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
       const id = store().addNode(pid, { kind, md: blankMd(kind), at });
       if (opts?.from && opts.edge) store().addEdge(pid, { from: opts.from, to: id, type: opts.edge });
       useUi.getState().select([id]);
+      // 새 카드가 화면 밖에 생기면 찾지 못한다. 줌은 그대로 두고 그 카드로 이동한다.
+      useUi.getState().requestCenter(id);
       useUi.getState().openPanel("inspector");
       useUi.getState().setInspTab("content");
       useUi.getState().requestCenter(id);

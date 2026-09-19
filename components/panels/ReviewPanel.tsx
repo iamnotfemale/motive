@@ -353,6 +353,7 @@ export function ReviewPanel({ pid }: { pid: string }) {
                           const newId = store().approveCandidate(pid, c.id);
                           if (!newId) return;
                           flashSaved();
+                          useUi.getState().requestCenter(newId);
                           const rel = EDGE_OPTIONS.find((o) => o.value === c.edgeType)?.ko ?? "관계";
                           toast(`${newId} 근거로 추가했어요`, { description: `${rel} 관계를 만들었어요` });
                         }}

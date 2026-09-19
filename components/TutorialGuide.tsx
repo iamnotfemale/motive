@@ -186,6 +186,7 @@ export function TutorialGuide({ pid }: { pid: string }) {
                     const id = reviseProblem(pid, (draft ?? REVISED_PROBLEM).trim());
                     setDraft(null);
                     useUi.getState().select([id]);
+                    useUi.getState().requestCenter(id);
                     toast("문제를 다시 정의했어요", { description: "Motive는 최종 문제만 남기지 않고, 왜 바뀌었는지도 함께 보존합니다." });
                   }}
                 >
@@ -257,6 +258,7 @@ export function TutorialGuide({ pid }: { pid: string }) {
                     const id = createTutorialDecision(pid, (draft ?? SUGGESTED_DECISION).trim());
                     setDraft(null);
                     useUi.getState().select([id]);
+                    useUi.getState().requestCenter(id);
                     useUi.getState().openPanel("inspector");
                     toast("결정을 남겼어요", { description: "S-01 매칭은 기각으로, 새 해결안은 채택으로 표시됩니다." });
                   }}
