@@ -18,7 +18,7 @@ export interface Spot {
 }
 
 const COL_GAP = 76;
-const ROW_GAP = 72;
+const ROW_GAP = 120; // 선이 카드 사이를 지나갈 여유
 const ORIGIN = { x: 56, y: 40 };
 
 /**
@@ -114,6 +114,31 @@ export function tidyLayout(
     return null;
   };
 
+  /**
+   * 두 층 이상 건너뛰는 선(예: 문제 → 근거)이 지나갈 통로. 그 사이 층의 카드는 이 x 범위를 비운다.
+   * 부모가 놓일 때 채워지고, 아래 층을 놓을 때 읽는다.
+   */
+  const corridors = new Map<number, { x0: number; x1: number }[]>();
+  const links = edges
+    .map((e) => hierarchy(e, kindOfId))
+    .filter((h): h is { parent: string; child: string } => Boolean(h) && level.has(h!.parent) && level.has(h!.child));
+  const reserveCorridors = (id: string, cx: number) => {
+    const lp = level.get(id)!;
+    for (const h of links) {
+      if (h.parent !== id) continue;
+      const lc = level.get(h.child)!;
+      for (let l = lp + 1; l < lc; l++) corridors.set(l, [...(corridors.get(l) ?? []), { x0: cx - 32, x1: cx + 32 }]);
+    }
+  };
+  /** 카드 [x, x+w] 가 통로와 겹치면 통로 오른쪽으로 민다. */
+  const avoidCorridors = (l: number, x: number, w: number) => {
+    let nx = x;
+    for (const c of [...(corridors.get(l) ?? [])].sort((a, b) => a.x0 - b.x0)) {
+      if (nx < c.x1 && nx + w > c.x0) nx = c.x1 + 16;
+    }
+    return nx;
+  };
+
   let y = ORIGIN.y;
   for (const l of sortedLevels) {
     const row = rows.get(l)!;
@@ -132,9 +157,10 @@ export function tidyLayout(
     for (const n of row) {
       const fp = footprint(n.id);
       const w = want.get(n.id);
-      // 부모 바로 아래를 원하되, 왼쪽 이웃과는 겹치지 않는다
-      const x = Math.max(cursor, w != null ? w - sizeOf(n.id).w / 2 : cursor);
+      // 부모 바로 아래를 원하되, 왼쪽 이웃·긴 선의 통로와는 겹치지 않는다
+      const x = avoidCorridors(l, Math.max(cursor, w != null ? w - sizeOf(n.id).w / 2 : cursor), fp.w);
       out[n.id] = { x: Math.round(x), y: Math.round(y) };
+      reserveCorridors(n.id, x + sizeOf(n.id).w / 2);
       let cy = y;
       for (const c of attached.get(n.id) ?? []) {
         out[c.id] = { x: Math.round(x + sizeOf(n.id).w + 28), y: Math.round(cy) };

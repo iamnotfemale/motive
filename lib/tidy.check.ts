@@ -87,4 +87,52 @@ const cyclic = levelsOf(
 );
 assert.ok(Number.isFinite(cyclic.get(nodes[0].id)!), "순환에서 멈추지 못했다");
 
+// 두 층 이상 건너뛰는 선은 중간 층 카드를 뚫지 않는다 (세로 직선 근사)
+{
+  const byId = new Map(nodes.map((n) => [n.id, n]));
+  for (const e of edges) {
+    const a = spots[e.from], b = spots[e.to];
+    if (!a || !b) continue;
+    const la = level.get(e.from)!, lb = level.get(e.to)!;
+    if (Math.abs(la - lb) < 2) continue;
+    const top = la < lb ? a : b, bottom = la < lb ? b : a;
+    const cx = top.x + 144;
+    for (const n of nodes) {
+      const l = level.get(n.id)!;
+      if (l <= Math.min(la, lb) || l >= Math.max(la, lb)) continue;
+      const s2 = spots[n.id];
+      const hit = cx > s2.x - 8 && cx < s2.x + 288 + 8 && s2.y > top.y && s2.y < bottom.y;
+      assert.ok(!hit, `${e.from}→${e.to} 선이 ${n.id} 를 지난다`);
+    }
+  }
+  void byId;
+}
+
 console.log("tidy.ts ok — levels:", Math.max(...level.values()) + 1);
+
+// 합성: 문제 → 가설 → 근거, 그리고 문제 → 결정(based_on 근거) 처럼 층을 건너뛰는 선이 있는 그래프
+{
+  const at = new Date().toISOString();
+  const mk = (id: string, type: "problem" | "claim" | "evidence" | "decision" | "output", subtype?: "solution") =>
+    ({ id, type, subtype, md: `# ${id}\n`, createdAt: at, updatedAt: at }) as (typeof nodes)[number];
+  const N = [mk("P-01", "problem"), mk("H-01", "claim"), mk("H-02", "claim"), mk("E-01", "evidence"), mk("E-02", "evidence"), mk("D-01", "decision"), mk("S-01", "output", "solution")];
+  const E = [
+    { id: "e1", from: "P-01", to: "H-01", type: "investigates" },
+    { id: "e2", from: "P-01", to: "H-02", type: "investigates" },
+    { id: "e3", from: "E-01", to: "H-01", type: "supports" },
+    { id: "e4", from: "E-02", to: "H-02", type: "contradicts" },
+    { id: "e5", from: "E-01", to: "D-01", type: "based_on" }, // D-01 은 근거 아래(3층)
+    { id: "e6", from: "P-01", to: "D-01", type: "investigates" }, // 문제 → 결정: 두 층 건너뜀
+    { id: "e7", from: "D-01", to: "S-01", type: "produces" },
+  ] as typeof edges;
+  const sz = Object.fromEntries(N.map((n) => [n.id, { w: 288, h: 200 }]));
+  const lv = levelsOf(N, E, (id) => kindOf(N.find((n) => n.id === id)!));
+  const sp = tidyLayout(N, E, [], sz);
+  const cx = sp["P-01"].x + 144;
+  for (const n of N) {
+    const l = lv.get(n.id)!;
+    if (l === 0 || l >= lv.get("D-01")!) continue;
+    assert.ok(!(cx > sp[n.id].x - 8 && cx < sp[n.id].x + 296), `P-01→D-01 선이 ${n.id} 를 지난다`);
+  }
+  console.log("tidy corridor ok");
+}
