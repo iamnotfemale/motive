@@ -47,11 +47,11 @@ export default function Landing() {
       {/* Hero */}
       <section id="top" className="relative px-6 pt-[clamp(72px,10vw,128px)]" style={{ background: "radial-gradient(70% 55% at 50% -10%, #e8f0fb 0%, rgba(250,250,250,0) 70%)" }}>
         <div className="mx-auto flex max-w-[1120px] flex-col items-center gap-6 text-center animate-fade-up">
-          <h1 className="text-[clamp(40px,6.6vw,84px)] leading-[1.06] font-semibold tracking-[-0.035em] whitespace-nowrap">
+          <h1 className={cn(serif.className, "text-[clamp(48px,8vw,104px)] leading-none font-normal tracking-[-0.02em] whitespace-nowrap")}>
             <Typewriter text="Motive Your Idea." />
           </h1>
           <p className="kr max-w-[560px] text-[clamp(16px,1.4vw,19px)] leading-[1.55] text-[#52525b] [text-wrap:pretty]">
-            자료, 가설, 반대 근거, 결정을 한 캔버스에 두고 연결합니다.
+            아이디어는 처음부터 정리되어 있지 않습니다.
           </p>
           <div className="mt-1 flex flex-wrap justify-center gap-2.5">
             <Link href="/dashboard" className={cn(btnInk, "h-11 px-5 text-[15px]")}>Start thinking</Link>
@@ -235,14 +235,12 @@ export default function Landing() {
   );
 }
 
-/** 한 글자씩 찍히는 제목. 끝나면 커서가 몇 번 깜빡이고 사라진다. 모션 축소 설정이면 바로 다 보인다. */
+/** 한 글자씩 찍히는 제목. 커서는 계속 깜빡인다. 모션 축소 설정이면 바로 다 보인다. */
 function Typewriter({ text }: { text: string }) {
   const [n, setN] = useState(0);
-  const [cursor, setCursor] = useState(true);
   useEffect(() => {
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
       setN(text.length);
-      setCursor(false);
       return;
     }
     let i = 0;
@@ -250,7 +248,6 @@ function Typewriter({ text }: { text: string }) {
       i += 1;
       setN(i);
       if (i < text.length) setTimeout(tick, 70 + Math.random() * 60);
-      else setTimeout(() => setCursor(false), 1800);
     }, 350);
     return () => clearTimeout(start);
   }, [text]);
@@ -259,7 +256,7 @@ function Typewriter({ text }: { text: string }) {
       {text.slice(0, n)}
       {/* 자리를 미리 잡아 줄이 흔들리지 않게 */}
       <span className="invisible">{text.slice(n)}</span>
-      {cursor && <span className="ml-[0.04em] inline-block h-[0.85em] w-[0.06em] translate-y-[0.1em] bg-ink animate-[blink_1s_steps(1)_infinite]" />}
+      <span className="ml-[0.06em] inline-block h-[0.8em] w-[0.05em] translate-y-[0.08em] bg-ink animate-[blink_1s_steps(1)_infinite]" />
     </span>
   );
 }
