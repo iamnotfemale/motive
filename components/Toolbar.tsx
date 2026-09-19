@@ -6,7 +6,7 @@
  * 왼쪽부터 도구(선택·손·격자·블록 추가) → 되돌리기 → 정리 → 단계별 핵심 행동 → 확대·축소.
  * 단계별 행동만 `정의 / 탐색 / 검토 / 결정 / 인계` 에 따라 바뀐다 (lib/phases.ts).
  */
-import { EyeOff, Hand, Maximize2, MousePointer2, Paperclip, Plus, Redo2, Sparkles, Spline, Undo2 } from "lucide-react";
+import { EyeOff, Hand, Maximize2, MoreHorizontal, MousePointer2, Paperclip, Plus, Redo2, Sparkles, Spline, Undo2 } from "lucide-react";
 import { Btn } from "@/components/kit";
 import { Icon } from "@/components/icon";
 import {
@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { KIND, type Kind } from "@/lib/labels";
-import { DOCK_ACTIONS, type ActionKey } from "@/lib/phases";
+import { ALL_ACTIONS, DOCK_ACTIONS, type ActionKey } from "@/lib/phases";
 import type { Phase } from "@/lib/types";
 import type { Tool } from "@/lib/ui";
 import { cn } from "@/lib/utils";
@@ -182,7 +182,7 @@ export function Toolbar(p: Props) {
 
       <Sep />
 
-      {/* 단계별 핵심 행동 */}
+      {/* 단계별 핵심 행동 + 나머지 전부는 '더 보기' */}
       {DOCK_ACTIONS[p.phase].map((a) => (
         <Tooltip key={a.key}>
           <TooltipTrigger asChild>
@@ -210,6 +210,30 @@ export function Toolbar(p: Props) {
           <TooltipContent side="top">{a.ko}</TooltipContent>
         </Tooltip>
       ))}
+      <DropdownMenu>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-label="모든 도구"
+                className="flex size-8 items-center justify-center rounded-[6px] text-muted transition-colors duration-[120ms] hover:bg-wash hover:text-ink"
+              >
+                <MoreHorizontal className="size-[18px]" />
+              </button>
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="top">모든 도구 — 단계와 상관없이</TooltipContent>
+        </Tooltip>
+        <DropdownMenuContent side="top" align="start" className="w-56">
+          {ALL_ACTIONS.filter((a) => !DOCK_ACTIONS[p.phase].some((d) => d.key === a.key)).map((a) => (
+            <DropdownMenuItem key={a.key} onSelect={() => p.onAction(a.key)} className="gap-2">
+              {a.key === "attach" ? <Paperclip className="size-4 text-muted" /> : <Icon name={a.icon} className="size-4 text-muted" />}
+              {a.ko}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <Sep />
 

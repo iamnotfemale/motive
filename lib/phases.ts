@@ -63,6 +63,23 @@ export const DOCK_ACTIONS: Record<Phase, ActionDef[]> = {
 };
 
 /** 도구 막대에서 누를 때 무엇을 비추는지. 인계·내보내기는 화면을 옮기므로 빠진다. */
+/** '모든 도구' 메뉴에 나오는 것. 단계와 상관없이 부를 수 있다 (내보내기·URL 은 다른 곳에 있어 뺀다). */
+export const ALL_ACTIONS: ActionDef[] = [
+  A.refine,
+  A["add-claim"],
+  A["add-question"],
+  A["add-note"],
+  A.attach,
+  A.sources,
+  A["find-evidence"],
+  A.conflicts,
+  A.issues,
+  A["add-solution"],
+  A["make-decision"],
+  A["add-requirement"],
+  A.handoff,
+];
+
 /** 도구 막대에서 비추기만 하는 단추. 나머지는 전부 실행이다. 반박·확인은 패널이 따로 열리므로 비춰서 위치를 보여준다. */
 export const SPOTLIGHT_KEYS: ActionKey[] = ["conflicts", "issues"];
 

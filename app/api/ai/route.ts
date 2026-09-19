@@ -49,8 +49,10 @@ const summary = z.object({
 });
 
 const refine = z.object({
-  statement: z.string().describe("대상·상황·불편이 한 문장에 드러나게 정리한 문제 진술"),
+  statement: z.string().describe("대상·상황·불편이 한 문장에 드러나게 정리한 문제 진술. 원문과 표현이 달라야 한다"),
   note: z.string().describe("무엇을 바꿨는지 한 줄"),
+  missing: z.array(z.enum(["대상", "상황", "불편"])).describe("원문에 빠져 있어 채우지 못한 요소. 없으면 빈 배열"),
+  clearEnough: z.boolean().describe("원문이 이미 대상·상황·불편을 갖춰 고칠 게 거의 없으면 true"),
 });
 
 function hasKey() {
@@ -146,7 +148,9 @@ ${text}`,
         system: GUARD,
         prompt: `아래 <진술> 안의 문장을 다듬는 일이다. **새 주제를 만들지 마라** — <진술>에 적힌 그 문제만 다룬다.
 <진술>에 있는 대상(누가)·상황(언제·어디서)·불편(무엇이 힘든가)이 한 문장에 드러나게 정리하라.
-<진술>에 없는 대상·수치·맥락을 지어내지 마라. 빠진 요소는 채우지 말고 그대로 비워 두어라.
+원문을 그대로 돌려주지 마라 — 구어체는 문어체로, 뭉뚱그린 말은 구체어로, 순서는 대상→상황→불편으로 고쳐라.
+<진술>에 없는 대상·수치·맥락을 지어내지 마라. 빠진 요소는 채우지 말고 missing 에 적어라.
+이미 세 요소가 다 있고 문장이 명확하면 clearEnough 를 true 로 두고, statement 는 표현만 다듬어라.
 
 <진술>
 ${problem}

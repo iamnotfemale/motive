@@ -20,7 +20,7 @@ export function RefinePanel({ pid }: { pid: string }) {
   const problem = doc?.nodes.find((n) => n.type === "problem");
   const original = problem ? parseMd(problem.md).title : "";
 
-  const [suggestion, setSuggestion] = useState<{ statement: string; note: string } | null>(null);
+  const [suggestion, setSuggestion] = useState<{ statement: string; note: string; missing?: string[]; clearEnough?: boolean } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(true);
 
@@ -88,6 +88,17 @@ export function RefinePanel({ pid }: { pid: string }) {
               {suggestion.statement}
             </p>
             <p className="kr text-[13px] leading-[19px] text-muted">{suggestion.note}</p>
+            {suggestion.clearEnough && (
+              <Notice tone="ok">이미 대상·상황·불편이 다 보이는 문장이에요. 표현만 조금 다듬었으니 원문을 유지해도 괜찮아요.</Notice>
+            )}
+            {suggestion.missing && suggestion.missing.length > 0 && (
+              <Notice tone="warn">
+                아직 비어 있는 것: <b>{suggestion.missing.join(" · ")}</b>. AI 는 지어내지 않아요 — 카드에서 직접 채워 주세요. 예)
+                {suggestion.missing.includes("대상") && " 누가 겪는 문제인가요?"}
+                {suggestion.missing.includes("상황") && " 언제·어디서 생기나요?"}
+                {suggestion.missing.includes("불편") && " 그래서 무엇이 힘든가요?"}
+              </Notice>
+            )}
           </div>
         )}
       </div>

@@ -48,7 +48,7 @@ export async function autoSummarize(pid: string, source: Pick<Source, "id" | "na
 }
 
 export const refineProblem = (problem: string) =>
-  call<{ statement: string; note: string }>({ kind: "refine", problem });
+  call<{ statement: string; note: string; missing?: string[]; clearEnough?: boolean }>({ kind: "refine", problem });
 
 interface RawCandidate {
   quote: string;

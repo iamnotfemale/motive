@@ -514,8 +514,17 @@ export function Canvas({
     const el = vpRef.current;
     if (!el) return;
     function onWheel(ev: WheelEvent) {
-      if (!ev.ctrlKey && !ev.metaKey) return;
       ev.preventDefault();
+      // 두 손가락 스크롤(트랙패드)·휠 = 화면 이동. 도구를 바꾸지 않아도 된다.
+      if (!ev.ctrlKey && !ev.metaKey) {
+        const { pan } = useUi.getState();
+        // Shift + 세로 휠은 마우스에서 가로 이동
+        const dx = ev.shiftKey && !ev.deltaX ? ev.deltaY : ev.deltaX;
+        const dy = ev.shiftKey && !ev.deltaX ? 0 : ev.deltaY;
+        useUi.getState().setPan({ x: pan.x - dx, y: pan.y - dy });
+        return;
+      }
+      // Ctrl/⌘ + 스크롤(트랙패드 핀치) = 확대·축소
       const box = el!.getBoundingClientRect();
       const { pan, zoom } = useUi.getState();
       const next = Math.min(4, Math.max(0.1, zoom * (ev.deltaY > 0 ? 0.94 : 1.06)));
