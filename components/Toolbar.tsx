@@ -188,7 +188,7 @@ export function Toolbar(p: Props) {
               <span className="whitespace-nowrap">{a.ko}</span>
             </button>
           </TooltipTrigger>
-          <TooltipContent side="top">{a.ko}만 보기</TooltipContent>
+          <TooltipContent side="top">{a.ko}</TooltipContent>
         </Tooltip>
       ))}
 

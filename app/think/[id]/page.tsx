@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Canvas } from "@/components/canvas/Canvas";
 import { SOURCE_W } from "@/components/canvas/SourceChip";
 import { Toolbar } from "@/components/Toolbar";
+import { TutorialGuide } from "@/components/TutorialGuide";
 import { LeftPanelView, LeftRail } from "@/components/LeftSide";
 import { WorkspaceHeader } from "@/components/WorkspaceHeader";
 import { Inspector } from "@/components/panels/Inspector";
@@ -64,7 +65,7 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
 
   // 데모는 카드가 12장이라 60% 로 열어 전체 구조가 먼저 보이게 한다. 이후 확대는 사용자가.
   useEffect(() => {
-    if (!hydrated || !project?.demo || !doc) return;
+    if (!hydrated || !(project?.demo || project?.tutorial) || !doc) return;
     const z = 0.6;
     const spots = Object.values(doc.placements);
     const minX = Math.min(...spots.map((p) => p.x));
@@ -80,7 +81,7 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
     });
     // pid 가 바뀔 때 한 번만. doc 변경마다 되돌리면 사용자의 이동을 덮어쓴다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated, pid, project?.demo]);
+  }, [hydrated, pid, project?.demo, project?.tutorial]);
 
   useEffect(() => {
     const sp = useUi.getState().spotlight;
@@ -257,7 +258,9 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
         case "url":
           return useUi.getState().openLeft("sources");
         case "find-evidence": {
-          const ready = d.sources.find((s) => s.state === "read");
+          // 자료를 골라 둔 상태면 그 자료에서, 아니면 읽은 자료 중 첫 번째에서
+          const picked = d.sources.find((s) => s.id === useUi.getState().sel[0] && s.state === "read");
+          const ready = picked ?? d.sources.find((s) => s.state === "read");
           if (!ready) {
             useUi.getState().openLeft("sources");
             return toast("먼저 자료를 올려주세요.");
@@ -475,6 +478,8 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
           onDeleteSelected={deleteSelected}
           onFork={forkSelection}
         />
+
+        {project.tutorial && <TutorialGuide pid={pid} />}
 
         <Toolbar
           tool={ui.tool}

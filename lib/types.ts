@@ -139,6 +139,8 @@ export interface Project {
   name: string;
   problemStatement: string;
   demo?: boolean;
+  /** 3분 체험 프로젝트. 안내 카드가 붙는다. */
+  tutorial?: boolean;
   /** 휴지통에 들어간 시각. 있으면 목록에서 숨기고, 30일 뒤 영구 삭제된다. */
   deletedAt?: string;
   createdAt: string;

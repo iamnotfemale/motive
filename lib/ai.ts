@@ -64,6 +64,14 @@ export async function proposeEvidence(
   text: string,
   nodes: ReasoningNode[],
 ): Promise<AiResult<EvidenceCandidate[]>> {
+  {
+    const { tutorialCandidates } = await import("./tutorial");
+    for (const d of Object.values(useDoc.getState().docs)) {
+      if (!d.sources.some((s) => s.id === sourceId)) continue;
+      const pre = tutorialCandidates(sourceId, d);
+      if (pre) return { ok: true, data: pre };
+    }
+  }
   const targets = nodes
     .filter((n) => n.type !== "note")
     .map((n) => ({ id: n.id, kind: KIND[kindOf(n)].ko, title: nodeTitle(n) }));

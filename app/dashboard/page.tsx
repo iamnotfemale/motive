@@ -8,7 +8,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { FileText, Folder, LayoutGrid, List, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Search, Settings, Plus, Trash2 } from "lucide-react";
+import { ChevronRight, FileText, Folder, LayoutGrid, List, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Search, Settings, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Btn } from "@/components/kit";
 import { SceneFrame, REL, type Rel, type SceneNode, type SceneSpec } from "@/components/landing/Scene";
@@ -21,6 +21,7 @@ import {
 import { edgeLabel, kindOf } from "@/lib/labels";
 import { titleOf } from "@/lib/md";
 import { useDoc, type Doc } from "@/lib/store";
+import { createTutorialProject } from "@/lib/tutorial";
 import type { Project } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -280,6 +281,9 @@ function DashboardInner() {
                       </button>
                     ))}
                   </div>
+                  <Btn size="lg" onClick={() => router.push(`/think/${createTutorialProject()}`)} className="gap-1.5" title="실제 프로젝트가 어떻게 발전하는지 3분 안에 체험해 보세요">
+                    3분 데모 체험하기 <ChevronRight className="size-3.5" />
+                  </Btn>
                   <Btn variant="ink" size="lg" onClick={() => { setNewOpen(true); setNewErr(false); }} className="gap-1.5">
                     <Plus className="size-4" />새 캔버스
                   </Btn>
@@ -317,6 +321,7 @@ function DashboardInner() {
                   <div className="flex gap-2">
                     <Btn variant="ink" onClick={() => setNewOpen(true)}>새 캔버스</Btn>
                     <Btn onClick={() => router.push(`/think/${createDemoProject()}`)}>데모 프로젝트 열기</Btn>
+                    <Btn onClick={() => router.push(`/think/${createTutorialProject()}`)} className="gap-1.5">3분 데모 체험하기 <ChevronRight className="size-3.5" /></Btn>
                   </div>
                 </div>
               ) : canvases.length === 0 ? (
@@ -342,6 +347,7 @@ function DashboardInner() {
                             <div className="flex items-center gap-2 pr-7">
                               <span className="flex-1 truncate text-[15px] font-semibold">{p.name}</span>
                               {p.demo && <span className="rounded-[4px] border border-line px-1.5 text-[12px] leading-[18px] text-muted">데모 자료</span>}
+                              {p.tutorial && <span className="rounded-[4px] border border-line px-1.5 text-[12px] leading-[18px] text-muted">체험</span>}
                             </div>
                             <div className="kr line-clamp-2 text-[13px] leading-[19px] text-muted">{p.problemStatement}</div>
                             <div className="mt-0.5 flex items-center gap-2.5 text-[12px] text-muted">
