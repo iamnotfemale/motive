@@ -45,8 +45,15 @@ export default function Landing() {
       </div>
 
       {/* Hero */}
-      <section id="top" className="relative px-6 pt-[clamp(72px,10vw,128px)]" style={{ background: "radial-gradient(70% 55% at 50% -10%, #e8f0fb 0%, rgba(250,250,250,0) 70%)" }}>
-        <div className="mx-auto flex max-w-[1120px] flex-col items-center gap-6 text-center animate-fade-up">
+      <section id="top" className="relative overflow-hidden px-6 pt-[clamp(72px,10vw,128px)]">
+        {/* 배경 — 부드럽게 흐르는 두 색 얼룩. 글자 뒤에서만 은은하게. */}
+        <div aria-hidden className="pointer-events-none absolute inset-0">
+          <div className="absolute inset-x-0 top-0 h-[70vh]" style={{ background: "radial-gradient(60% 55% at 50% -5%, #dbe7fb 0%, rgba(250,250,250,0) 70%)" }} />
+          <div className="absolute top-[8%] left-[12%] size-[38vw] rounded-full opacity-70 blur-3xl animate-[drift_18s_ease-in-out_infinite]" style={{ background: "radial-gradient(circle, #b9d0fa 0%, rgba(185,208,250,0) 70%)" }} />
+          <div className="absolute top-[14%] right-[10%] size-[34vw] rounded-full opacity-60 blur-3xl animate-[drift_22s_ease-in-out_infinite_reverse]" style={{ background: "radial-gradient(circle, #f5d6c6 0%, rgba(245,214,198,0) 70%)" }} />
+          <div className="absolute inset-x-0 top-[45vh] h-[40vh]" style={{ background: "linear-gradient(to bottom, rgba(250,250,250,0), #fafafa)" }} />
+        </div>
+        <div className="relative mx-auto flex max-w-[1120px] flex-col items-center gap-6 text-center animate-fade-up">
           <h1 className={cn(serif.className, "text-[clamp(48px,8vw,104px)] leading-none font-normal tracking-[-0.02em] whitespace-nowrap")}>
             <Typewriter text="Motive Your Idea." />
           </h1>
@@ -59,7 +66,7 @@ export default function Landing() {
           </div>
         </div>
 
-        <div id="product" className="mx-auto mt-[clamp(48px,6vw,80px)] max-w-[1120px]">
+        <div id="product" className="relative mx-auto mt-[clamp(48px,6vw,80px)] max-w-[1120px]">
           <SceneFrame
             spec={hero}
             w={1220}
