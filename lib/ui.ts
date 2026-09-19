@@ -91,6 +91,8 @@ interface UiState {
   grid: boolean;
   /** 관계선 표시. 숨기면 카드만 남아 배치를 생각하기 쉽다. */
   showEdges: boolean;
+  /** 체험 안내가 지금 눌러야 할 곳. 카드·자료 id 또는 "cand:H-01" 같은 표식. 테두리가 깜빡인다. */
+  hint: string | null;
   /** 전체 화면 편집기. 노션처럼 본문만 크게 본다. */
   wide: boolean;
   /** 새 카드를 화면 가운데로 부드럽게 옮겨달라는 요청. */
@@ -130,6 +132,7 @@ interface UiState {
   setConnecting: (c: Connecting | null) => void;
   setGrid: (v: boolean) => void;
   setShowEdges: (v: boolean) => void;
+  setHint: (h: string | null) => void;
   setWide: (v: boolean) => void;
   requestCenter: (id: string) => void;
   requestFit: () => void;
@@ -166,6 +169,7 @@ const initial = {
   connecting: null as Connecting | null,
   grid: true,
   showEdges: true,
+  hint: null as string | null,
   wide: false,
   center: null as { id: string; nonce: number } | null,
   fit: null as number | null,
@@ -208,6 +212,7 @@ export const useUi = create<UiState>()((set, get) => ({
   setConnecting: (connecting) => set({ connecting }),
   setGrid: (grid) => set({ grid }),
   setShowEdges: (showEdges) => set({ showEdges }),
+  setHint: (hint) => set({ hint }),
   setWide: (wide) => set({ wide }),
   requestCenter: (id) => set({ center: { id, nonce: Date.now() } }),
   requestFit: () => set({ fit: Date.now() }),

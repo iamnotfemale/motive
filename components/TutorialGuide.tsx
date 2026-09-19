@@ -5,7 +5,7 @@
  * 화면을 막지 않고, 언제든 숨길 수 있고, 처음부터 다시 할 수 있다.
  */
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, ChevronRight, RotateCcw, X } from "lucide-react";
 import { toast } from "sonner";
 import { Btn } from "@/components/kit";
@@ -42,16 +42,32 @@ export function TutorialGuide({ pid }: { pid: string }) {
   const [tried, setTried] = useState<Record<string, boolean>>({});
   const [skipLook, setSkipLook] = useState(false);
   const showEdges = useUi((s) => s.showEdges);
-  if (!doc) return null;
+  const sel = useUi((s) => s.sel[0]);
+  const panel = useUi((s) => s.panel);
+  const reviewStep = useUi((s) => s.review?.step);
 
-  const derived = tutorialStep(doc);
+  const derived = doc ? tutorialStep(doc) : { step: "evidence" as TutorialStep, counter: 0 };
   const lookDone = skipLook || ["edges", "focus", "wide"].every((k) => tried[k]);
   const step: TutorialStep | "look" = derived.step === "decide" && !lookDone ? "look" : derived.step;
   const counter = derived.counter;
+
+  // 지금 눌러야 할 곳에 파란 테두리. 단계와 열린 패널을 보고 정한다.
+  useEffect(() => {
+    let h: string | null = null;
+    if (hidden) h = null;
+    else if (step === "evidence" || step === "more") {
+      if (panel === "review") h = reviewStep === "pick-target" || reviewStep === "candidates" ? "H-01" : null;
+      else if (panel === "source") h = sel && TUTORIAL_SOURCES.some((s) => s.id === sel) ? sel : null;
+      else h = step === "evidence" ? TUTORIAL_SOURCES[0].id : null;
+    }
+    useUi.getState().setHint(h);
+    return () => useUi.getState().setHint(null);
+  }, [step, panel, reviewStep, sel, hidden]);
+
+  if (!doc) return null;
   const idx = ORDER.findIndex((o) => o.key === step);
   const done = step === "done";
 
-  const sel = useUi((s) => s.sel[0]);
   const picked = TUTORIAL_SOURCES.find((s) => s.id === sel);
 
   /** 자료 패널(제목·미리보기·요약)을 연다. 근거 찾기는 그 다음. */
@@ -104,7 +120,7 @@ export function TutorialGuide({ pid }: { pid: string }) {
           <p className="kr text-[13px] leading-5 text-muted">
             자료를 읽어 근거를 뽑고 가설에 연결하면, 문제 정의가 어떻게 바뀌는지 따라갈 수 있어요. 이 카드가 매번 다음 한 걸음을 알려줍니다. 먼저 인터뷰부터 읽어 볼까요?
           </p>
-          <Btn variant="ink" className="justify-between" onClick={() => { setWelcome(false); openSource(TUTORIAL_SOURCES[0].id); }}>
+          <Btn variant="ink" className="hint-pulse justify-between" onClick={() => { setWelcome(false); openSource(TUTORIAL_SOURCES[0].id); }}>
             1단계 · 인터뷰 자료 열어보기 <ChevronRight className="size-4" />
           </Btn>
         </div>
@@ -129,7 +145,7 @@ export function TutorialGuide({ pid }: { pid: string }) {
             {step === "evidence" && (
               <>
                 <p className="kr text-[13px] leading-5 text-muted">
-                  ① 인터뷰를 읽어 보세요. ② 아래 버튼을 누르면 오른쪽에 후보가 뜹니다. ③ 근거를 붙일 카드로 <b>H-01 가설</b>을 고르고, 마음에 드는 인용을 <b>승인</b>하세요. 승인한 인용이 근거 카드가 되어 가설에 연결됩니다.
+                  파란 테두리가 깜빡이는 곳을 누르면 됩니다. ① 오른쪽 자료 패널 아래 <b>카드에 연결하기</b> ② 대상 목록에서 <b>H-01 가설</b> ③ 후보 중 <b>근거로 추가</b>. 승인한 인용이 근거 카드가 되어 가설에 연결됩니다.
                 </p>
                 <div className="flex gap-2">
                   <Btn className="flex-1" onClick={() => openSource(TUTORIAL_SOURCES[0].id)}>인터뷰 보기</Btn>
@@ -163,6 +179,7 @@ export function TutorialGuide({ pid }: { pid: string }) {
                 />
                 <Btn
                   variant="ink"
+                  className="hint-pulse"
                   onClick={() => {
                     const id = reviseProblem(pid, (draft ?? REVISED_PROBLEM).trim());
                     setDraft(null);
@@ -232,6 +249,7 @@ export function TutorialGuide({ pid }: { pid: string }) {
                 />
                 <Btn
                   variant="ink"
+                  className="hint-pulse"
                   onClick={() => {
                     const id = createTutorialDecision(pid, (draft ?? SUGGESTED_DECISION).trim());
                     setDraft(null);
@@ -247,7 +265,7 @@ export function TutorialGuide({ pid }: { pid: string }) {
             {step === "handoff" && (
               <>
                 <p className="kr text-[13px] leading-5 text-muted">결과물이 아니라, 다음 사람이 이어서 생각할 수 있는 Context를 만듭니다. 기각한 대안·미검증·반대 근거가 그대로 들어갑니다.</p>
-                <Btn variant="ink" onClick={() => router.push(`/think/${pid}/handoff`)}>인계 문서 만들기</Btn>
+                <Btn variant="ink" className="hint-pulse" onClick={() => router.push(`/think/${pid}/handoff`)}>인계 문서 만들기</Btn>
               </>
             )}
             {done && (

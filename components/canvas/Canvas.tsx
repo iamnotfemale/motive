@@ -687,6 +687,7 @@ export function Canvas({
                 hovered={ui.hover === n.id}
                 focused={ui.focusId === n.id}
                 dropTarget={ui.dropTarget === n.id}
+                hinted={ui.hint === n.id}
                 connectTarget={connecting?.over === n.id}
                 connectSide={connecting?.over === n.id ? connecting.overSide : null}
                 connecting={Boolean(connecting) && connecting!.from !== n.id}
@@ -762,6 +763,7 @@ export function Canvas({
                 x={p.x}
                 y={p.y}
                 attached={Boolean(s.attachedTo && rects[s.attachedTo])}
+                hinted={ui.hint === s.id}
                 onDetach={() => {
                   // 끊으면 지금 자리에 그대로 남는다
                   store().moveNode(pid, s.id, { x: p.x, y: p.y });

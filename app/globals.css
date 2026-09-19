@@ -112,6 +112,18 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* 체험 안내가 가리키는 곳 — 파란 테두리가 숨 쉬듯 깜빡인다 */
+.hint-pulse {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 3px;
+  border-radius: 8px;
+  animation: hintPulse 1.4s ease-in-out infinite;
+}
+@keyframes hintPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.35); }
+  50% { box-shadow: 0 0 0 8px rgba(37, 99, 235, 0); }
+}
+
 button {
   cursor: pointer;
 }

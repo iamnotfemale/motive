@@ -43,6 +43,7 @@ interface Props {
   evidenceCount: number;
   /** 카드에 붙어 있다 — 자리가 카드에 묶여 있고 끌 수 없다. */
   attached?: boolean;
+  hinted?: boolean;
   onDetach?: () => void;
   onMeasure: (id: string, h: number) => void;
   onPointerDown: (e: React.PointerEvent) => void;
@@ -88,6 +89,7 @@ export const SourceChip = memo(function SourceChip(p: Props) {
         }}
         className={cn(
           "group/chip relative flex flex-col gap-2 rounded-[8px] border bg-surface p-3 select-none transition-[border-color,box-shadow] duration-[120ms]",
+          p.hinted && "hint-pulse",
           p.attached ? "cursor-pointer" : "cursor-grab",
           "focus-visible:outline-2 focus-visible:outline-brand focus-visible:outline-offset-2",
           p.dragging && "cursor-grabbing shadow-[0_8px_20px_rgba(24,24,27,.14)]",

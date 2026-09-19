@@ -35,6 +35,7 @@ export function SourcePanel({ pid }: { pid: string }) {
   const doc = useDoc((s) => s.docs[pid]);
   const patchSource = useDoc((s) => s.patchSource);
   const id = useUi((s) => s.sel[0]);
+  const hint = useUi((s) => s.hint);
   const source = doc?.sources.find((s) => s.id === id);
 
   const [busy, setBusy] = useState(false);
@@ -215,6 +216,7 @@ export function SourcePanel({ pid }: { pid: string }) {
           <span className="kr flex-1 text-[13px] text-muted">이 자료에서 인용을 골라 카드에 연결해요</span>
           <Btn
             variant="ink"
+            className={hint === source.id ? "hint-pulse" : undefined}
             onClick={() => {
               useUi.getState().setReview({ sourceId: source.id, step: "pick-target", targetId: null, pickedLine: null, backTo: "candidates" });
               useUi.getState().openPanel("review");

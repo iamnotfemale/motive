@@ -180,7 +180,10 @@ export function ReviewPanel({ pid }: { pid: string }) {
                     type="button"
                     aria-label={`${KIND[kindOf(n)].ko} ${n.id} ${nodeTitle(n)}`}
                     onClick={() => void analyze(n.id)}
-                    className="flex h-10 items-center gap-2 rounded-[6px] border border-line bg-surface px-3 text-left text-[14px] hover:border-brand hover:bg-wash"
+                    className={cn(
+                      "flex h-10 items-center gap-2 rounded-[6px] border border-line bg-surface px-3 text-left text-[14px] hover:border-brand hover:bg-wash",
+                      ui.hint === n.id && "hint-pulse",
+                    )}
                   >
                     <Mono>{n.id}</Mono>
                     <span className="min-w-0 flex-1 truncate">{nodeTitle(n)}</span>
@@ -345,6 +348,7 @@ export function ReviewPanel({ pid }: { pid: string }) {
                         variant="ink"
                         size="sm"
                         disabled={c.mismatch}
+                        className={cn(ui.hint === c.targetId && c.edgeType === "contradicts" && "hint-pulse")}
                         onClick={() => {
                           const newId = store().approveCandidate(pid, c.id);
                           if (!newId) return;

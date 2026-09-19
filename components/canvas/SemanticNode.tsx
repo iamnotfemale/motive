@@ -35,6 +35,8 @@ export interface NodeViewProps {
   hovered: boolean;
   focused: boolean;
   dropTarget: boolean;
+  /** 체험 안내가 가리키는 카드 */
+  hinted?: boolean;
   connectTarget: boolean;
   /** 연결선을 놓으면 꽂힐 변. 끌고 있는 동안만 값이 있다. */
   connectSide: Side | null;
@@ -113,6 +115,8 @@ function NodeViewImpl(p: NodeViewProps) {
           }
         }}
         className={cn(
+          p.hinted && "hint-pulse",
+
           "relative rounded-[10px] bg-surface p-4 select-none transition-[border-color,box-shadow,background] duration-[120ms]",
           "focus-visible:outline-2 focus-visible:outline-brand focus-visible:outline-offset-2",
           node.proposed ? "border border-dashed border-line-strong bg-wash-2" : "border border-line",
@@ -337,6 +341,7 @@ export const NodeView = memo(NodeViewImpl, (a, b) => {
     a.hovered === b.hovered &&
     a.focused === b.focused &&
     a.dropTarget === b.dropTarget &&
+    a.hinted === b.hinted &&
     a.connectTarget === b.connectTarget &&
     a.connectSide === b.connectSide &&
     a.connecting === b.connecting &&
