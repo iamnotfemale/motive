@@ -22,6 +22,7 @@ import { edgeLabel, kindOf } from "@/lib/labels";
 import { titleOf } from "@/lib/md";
 import { useDoc, type Doc } from "@/lib/store";
 import { createTutorialProject } from "@/lib/tutorial";
+import { ConfirmDialog, PromptDialog } from "@/components/Confirm";
 import type { Project } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -153,10 +154,9 @@ function DashboardInner() {
     toast("휴지통으로 옮겼어요", { action: { label: "되돌리기", onClick: () => restoreProject(p.id) } });
   }
 
-  function rename(p: Project) {
-    const name = prompt("캔버스 이름", p.name)?.trim();
-    if (name && name !== p.name) renameProject(p.id, name);
-  }
+  const [renaming, setRenaming] = useState<Project | null>(null);
+  const [purging, setPurging] = useState<Project | null>(null);
+  const rename = (p: Project) => setRenaming(p);
 
   const sources = useMemo(
     () =>
@@ -442,7 +442,7 @@ function DashboardInner() {
                       <span className="flex-1 truncate font-medium">{p.name}</span>
                       <span className="text-[12px] text-faint">{ago(p.deletedAt!)} 지움</span>
                       <Btn size="sm" onClick={() => { restoreProject(p.id); toast("복원했어요"); }}>복원</Btn>
-                      <Btn size="sm" variant="danger" onClick={() => { if (confirm(`"${p.name}" 을 영구 삭제할까요? 되돌릴 수 없어요.`)) deleteProject(p.id); }}>영구 삭제</Btn>
+                      <Btn size="sm" variant="danger" onClick={() => setPurging(p)}>영구 삭제</Btn>
                     </div>
                   ))}
                 </div>
@@ -453,6 +453,31 @@ function DashboardInner() {
           )}
         </div>
       </main>
+
+      <PromptDialog
+        open={Boolean(renaming)}
+        title="캔버스 이름"
+        initial={renaming?.name ?? ""}
+        onSubmit={(name) => {
+          if (renaming && name !== renaming.name) {
+            renameProject(renaming.id, name);
+            toast("이름을 바꿨어요");
+          }
+        }}
+        onClose={() => setRenaming(null)}
+      />
+      <ConfirmDialog
+        open={Boolean(purging)}
+        title="영구 삭제할까요?"
+        description={purging ? `"${purging.name}" 캔버스와 그 안의 카드·자료가 모두 사라져요. 되돌릴 수 없어요.` : undefined}
+        confirmLabel="영구 삭제"
+        danger
+        onConfirm={() => {
+          if (purging) deleteProject(purging.id);
+          toast("영구 삭제했어요");
+        }}
+        onClose={() => setPurging(null)}
+      />
     </div>
   );
 }
@@ -514,8 +539,8 @@ function SettingsView() {
     if (fileRef.current) fileRef.current.value = "";
   }
 
+  const [wiping, setWiping] = useState(false);
   function wipe() {
-    if (!confirm("이 브라우저의 Motive 데이터를 모두 지울까요? 프로젝트도 함께 사라져요.")) return;
     localStorage.removeItem("motive.doc.v1");
     location.href = "/dashboard";
   }
@@ -536,13 +561,6 @@ function SettingsView() {
               <span className="size-1.5 rounded-full" style={{ background: ai === "on" ? "#3f3f46" : "#9a6700" }} />
               {ai === "checking" ? "확인 중…" : ai === "on" ? "연결됨" : "미연결 — 직접 작성과 인계는 그대로 됩니다"}
             </span>
-            <span className="kr text-[13px] text-muted">서버 환경변수 <span className="font-mono">OPENROUTER_API_KEY</span> 로 켭니다. 근거 후보 찾기와 문제 다듬기에만 쓰이고, 원문은 동의한 경우에만 전송됩니다.</span>
-          </span>
-          <span className="text-muted">단축키</span>
-          <span className="flex flex-wrap gap-3.5 text-[13px] text-[#52525b]">
-            <span><b className="font-mono font-medium text-ink">⌘K</b> 검색</span>
-            <span><b className="font-mono font-medium text-ink">N</b> 카드 추가</span>
-            <span><b className="font-mono font-medium text-ink">V / H</b> 선택 · 손</span>
           </span>
         </div>
       </div>
@@ -553,10 +571,19 @@ function SettingsView() {
           <Btn onClick={() => fileRef.current?.click()}>가져오기</Btn>
           <input ref={fileRef} type="file" accept="application/json,.json" className="hidden" onChange={(e) => importFile(e.target.files?.[0])} />
           <span className="flex-1" />
-          <Btn variant="danger" onClick={wipe}>이 브라우저의 데이터 지우기</Btn>
+          <Btn variant="danger" onClick={() => setWiping(true)}>이 브라우저의 데이터 지우기</Btn>
         </div>
         <div className="kr text-[13px] text-muted">브라우저 데이터를 지우면 프로젝트도 함께 사라집니다. 먼저 내보내 두세요. 가져오기는 같은 id 의 캔버스를 파일 쪽으로 덮어씁니다.</div>
       </div>
+      <ConfirmDialog
+        open={wiping}
+        title="이 브라우저의 데이터를 모두 지울까요?"
+        description="프로젝트·카드·자료가 전부 사라지고 되돌릴 수 없어요. 먼저 '전체 내보내기'로 백업해 두세요."
+        confirmLabel="모두 지우기"
+        danger
+        onConfirm={wipe}
+        onClose={() => setWiping(false)}
+      />
     </div>
   );
 }

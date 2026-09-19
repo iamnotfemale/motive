@@ -22,6 +22,7 @@ import {
 } from "@/lib/tutorial";
 import { useUi } from "@/lib/ui";
 import { cn } from "@/lib/utils";
+import { ConfirmDialog } from "@/components/Confirm";
 
 const ORDER: { key: TutorialStep | "look"; ko: string }[] = [
   { key: "evidence", ko: "인터뷰에서 근거 뽑기" },
@@ -84,11 +85,21 @@ export function TutorialGuide({ pid }: { pid: string }) {
     useUi.getState().openPanel("review");
   }
 
-  function restart() {
-    if (!confirm("데모를 처음부터 다시 시작할까요? 현재 데모에서 만든 변경사항은 사라집니다.")) return;
-    useDoc.getState().deleteProject(pid);
-    router.replace(`/think/${createTutorialProject()}`);
-  }
+  const [restarting, setRestarting] = useState(false);
+  const restart = () => setRestarting(true);
+  const confirmDialog = (
+    <ConfirmDialog
+      open={restarting}
+      title="데모를 처음부터 다시 시작할까요?"
+      description="지금 데모에서 만든 카드와 연결은 사라지고 처음 상태로 돌아가요."
+      confirmLabel="처음부터 다시"
+      onConfirm={() => {
+        useDoc.getState().deleteProject(pid);
+        router.replace(`/think/${createTutorialProject()}`);
+      }}
+      onClose={() => setRestarting(false)}
+    />
+  );
 
   if (hidden)
     return (
@@ -102,6 +113,8 @@ export function TutorialGuide({ pid }: { pid: string }) {
     );
 
   return (
+    <>
+    {confirmDialog}
     <div
       data-ui="tutorial"
       className="absolute bottom-6 left-[76px] z-20 flex w-[320px] flex-col gap-3 rounded-[10px] border border-line bg-surface p-4 shadow-[0_8px_24px_rgba(24,24,27,.12)] animate-fade-up"
@@ -288,5 +301,6 @@ export function TutorialGuide({ pid }: { pid: string }) {
         </>
       )}
     </div>
+    </>
   );
 }
