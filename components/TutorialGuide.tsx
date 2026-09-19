@@ -60,7 +60,7 @@ export function TutorialGuide({ pid }: { pid: string }) {
       <button
         type="button"
         onClick={() => setHidden(false)}
-        className="absolute right-6 bottom-6 z-20 h-8 rounded-[6px] border border-line bg-surface px-3 text-[13px] font-medium shadow-[0_4px_12px_rgba(24,24,27,.08)] hover:bg-wash"
+        className="absolute bottom-6 left-[76px] z-20 h-8 rounded-[6px] border border-line bg-surface px-3 text-[13px] font-medium shadow-[0_4px_12px_rgba(24,24,27,.08)] hover:bg-wash"
       >
         체험 안내 {done ? "" : `${idx + 1}/${ORDER.length}`}
       </button>
@@ -69,7 +69,7 @@ export function TutorialGuide({ pid }: { pid: string }) {
   return (
     <div
       data-ui="tutorial"
-      className="absolute right-6 bottom-6 z-20 flex w-[340px] flex-col gap-3 rounded-[10px] border border-line bg-surface p-4 shadow-[0_8px_24px_rgba(24,24,27,.12)] animate-fade-up"
+      className="absolute bottom-6 left-[76px] z-20 flex w-[320px] flex-col gap-3 rounded-[10px] border border-line bg-surface p-4 shadow-[0_8px_24px_rgba(24,24,27,.12)] animate-fade-up"
     >
       <div className="flex items-center gap-2">
         <span className="text-[13px] font-semibold tracking-[.02em] text-muted">체험 안내</span>
