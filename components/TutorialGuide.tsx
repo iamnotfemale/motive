@@ -47,7 +47,9 @@ export function TutorialGuide({ pid }: { pid: string }) {
   const reviewStep = useUi((s) => s.review?.step);
 
   const derived = doc ? tutorialStep(doc) : { step: "evidence" as TutorialStep, counter: 0 };
-  const lookDone = skipLook || ["edges", "focus", "wide"].every((k) => tried[k]);
+  const LOOK_ORDER = ["edges", "focus", "wide"] as const;
+  const lookDone = skipLook || LOOK_ORDER.every((k) => tried[k]);
+  const nextLook = LOOK_ORDER.find((k) => !tried[k]) ?? null;
   const step: TutorialStep | "look" = derived.step === "decide" && !lookDone ? "look" : derived.step;
   const counter = derived.counter;
 
@@ -193,10 +195,11 @@ export function TutorialGuide({ pid }: { pid: string }) {
             )}
             {step === "look" && (
               <>
+
                 <p className="kr text-[13px] leading-5 text-muted">문제가 바뀌었어요. 결정하기 전에 캔버스를 다르게 보는 세 가지를 잠깐 써 보세요.</p>
                 <div className="flex flex-col gap-1.5">
                   <Btn
-                    className="justify-between"
+                    className={cn("justify-between", nextLook === "edges" && "hint-pulse")}
                     onClick={() => {
                       useUi.getState().setShowEdges(!showEdges);
                       setTried((t) => ({ ...t, edges: true }));
@@ -206,7 +209,7 @@ export function TutorialGuide({ pid }: { pid: string }) {
                     {tried.edges && <Check className="size-3.5 text-ok" />}
                   </Btn>
                   <Btn
-                    className="justify-between"
+                    className={cn("justify-between", nextLook === "focus" && "hint-pulse")}
                     onClick={() => {
                       const id = doc.nodes.some((n) => n.id === "H-01") ? "H-01" : doc.nodes[0]?.id;
                       if (!id) return;
@@ -220,7 +223,7 @@ export function TutorialGuide({ pid }: { pid: string }) {
                     {tried.focus && <Check className="size-3.5 text-ok" />}
                   </Btn>
                   <Btn
-                    className="justify-between"
+                    className={cn("justify-between", nextLook === "wide" && "hint-pulse")}
                     onClick={() => {
                       const id = doc.nodes.find((n) => n.type === "problem" && n.id !== "P-01")?.id ?? "P-01";
                       useUi.getState().select([id]);
