@@ -42,7 +42,6 @@ export const REVIEW_STEPS = [
 
 export type ReviewStep =
   | "reading"
-  | "consent"
   | "analyzing"
   | "candidates"
   | "source"

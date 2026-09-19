@@ -43,6 +43,15 @@ export function TutorialGuide({ pid }: { pid: string }) {
   const idx = ORDER.findIndex((o) => o.key === step);
   const done = step === "done";
 
+  const sel = useUi((s) => s.sel[0]);
+  const picked = TUTORIAL_SOURCES.find((s) => s.id === sel);
+
+  /** 자료 패널(제목·미리보기·요약)을 연다. 근거 찾기는 그 다음. */
+  function openSource(sourceId: string) {
+    useUi.getState().select([sourceId]);
+    useUi.getState().openPanel("source");
+  }
+
   function findEvidence(sourceId: string) {
     useUi.getState().select([sourceId]);
     useUi.getState().setReview({ sourceId, step: "pick-target", targetId: null, pickedLine: null, backTo: "candidates" });
@@ -82,10 +91,13 @@ export function TutorialGuide({ pid }: { pid: string }) {
       {welcome && step === "evidence" ? (
         <div className="flex flex-col gap-3">
           <p className="kr text-[14px] leading-6">
-            이 팀은 처음에 <b>“스터디 매칭 서비스”</b>를 만들려고 했습니다. 하지만 3주간의 리서치가 진행되면서 문제 정의가 완전히 달라집니다. 직접 따라가 보세요.
+            이 팀은 처음에 <b>“스터디 매칭 서비스”</b>를 만들려고 했어요. 캔버스에 그 첫 생각이 놓여 있습니다 — <b>P-01 문제 · H-01 가설 · S-01 해결안</b>. 오른쪽 줄은 3주 동안 모은 자료 5개예요.
           </p>
-          <Btn variant="ink" className="justify-between" onClick={() => { setWelcome(false); findEvidence(TUTORIAL_SOURCES[0].id); }}>
-            인터뷰 자료에서 근거 찾기 <ChevronRight className="size-4" />
+          <p className="kr text-[13px] leading-5 text-muted">
+            자료를 읽어 근거를 뽑고 가설에 연결하면, 문제 정의가 어떻게 바뀌는지 따라갈 수 있어요. 이 카드가 매번 다음 한 걸음을 알려줍니다. 먼저 인터뷰부터 읽어 볼까요?
+          </p>
+          <Btn variant="ink" className="justify-between" onClick={() => { setWelcome(false); openSource(TUTORIAL_SOURCES[0].id); }}>
+            1단계 · 인터뷰 자료 열어보기 <ChevronRight className="size-4" />
           </Btn>
         </div>
       ) : (
@@ -108,8 +120,13 @@ export function TutorialGuide({ pid }: { pid: string }) {
           <div className="flex flex-col gap-2 border-t border-line pt-3">
             {step === "evidence" && (
               <>
-                <p className="kr text-[13px] leading-5 text-muted">인터뷰에서 근거 후보를 뽑고, 어느 카드에 어떤 관계로 붙일지 직접 고르세요.</p>
-                <Btn variant="ink" onClick={() => findEvidence(TUTORIAL_SOURCES[0].id)}>인터뷰에서 근거 찾기</Btn>
+                <p className="kr text-[13px] leading-5 text-muted">
+                  ① 인터뷰를 읽어 보세요. ② 아래 버튼을 누르면 오른쪽에 후보가 뜹니다. ③ 근거를 붙일 카드로 <b>H-01 가설</b>을 고르고, 마음에 드는 인용을 <b>승인</b>하세요. 승인한 인용이 근거 카드가 되어 가설에 연결됩니다.
+                </p>
+                <div className="flex gap-2">
+                  <Btn className="flex-1" onClick={() => openSource(TUTORIAL_SOURCES[0].id)}>인터뷰 보기</Btn>
+                  <Btn variant="ink" className="flex-1" onClick={() => findEvidence(TUTORIAL_SOURCES[0].id)}>근거 찾기</Btn>
+                </div>
               </>
             )}
             {step === "more" && (
@@ -118,9 +135,12 @@ export function TutorialGuide({ pid }: { pid: string }) {
                   가설 H-01에 반대 근거 {counter}건. 하나로 가설을 뒤집기엔 부족해요. 다른 자료도 확인해 볼까요?
                 </p>
                 <div className="flex gap-2">
-                  <Btn className="flex-1" onClick={() => findEvidence("tut-competitor")}>경쟁 조사</Btn>
-                  <Btn className="flex-1" onClick={() => findEvidence("tut-survey")}>설문 결과</Btn>
+                  <Btn className="flex-1" onClick={() => openSource("tut-competitor")}>경쟁 조사 보기</Btn>
+                  <Btn className="flex-1" onClick={() => openSource("tut-survey")}>설문 결과 보기</Btn>
                 </div>
+                {picked && (
+                  <Btn variant="ink" onClick={() => findEvidence(picked.id)}>{picked.name} 에서 근거 찾기</Btn>
+                )}
                 <p className="kr text-[12px] leading-4 text-faint">근거는 저장되는 것보다 무엇을 바꾸는지가 중요합니다.</p>
               </>
             )}

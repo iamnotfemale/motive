@@ -12,6 +12,7 @@ import Image from "next/image";
 import { toast } from "sonner";
 import { Badge, Btn, Dot, FieldLabel, Indeterminate } from "@/components/kit";
 import { PanelClose, SidePanel } from "./Panel";
+import { MdView } from "@/components/MdView";
 import { autoSummarize } from "@/lib/ai";
 import { linesOf } from "@/lib/extract";
 import { nodeTitle, useDoc } from "@/lib/store";
@@ -103,6 +104,15 @@ export function SourcePanel({ pid }: { pid: string }) {
             {source.preview ? (
               <div className="overflow-hidden rounded-[8px] border border-line bg-wash-2">
                 <Image src={source.preview} alt={source.name} width={800} height={600} unoptimized className="h-auto w-full object-contain" />
+              </div>
+            ) : source.kind === "markdown" || source.kind === "interview" ? (
+              <div className="rounded-[8px] border border-line px-4 py-3">
+                <MdView md={showAll ? source.text : lines.slice(0, PREVIEW_LINES * 2).join("\n")} />
+                {lines.length > PREVIEW_LINES * 2 && (
+                  <button type="button" onClick={() => setShowAll((v) => !v)} className="mt-2 text-[13px] text-muted hover:text-ink">
+                    {showAll ? "앞부분만" : `… ${lines.length - PREVIEW_LINES * 2}줄 더 보기`}
+                  </button>
+                )}
               </div>
             ) : (
               <div className="overflow-hidden rounded-[8px] border border-line font-mono text-[13px] leading-[22px]">
@@ -199,6 +209,21 @@ export function SourcePanel({ pid }: { pid: string }) {
         )}
       </div>
 
+
+      {usable && (
+        <div className="flex items-center gap-2 border-t border-line px-5 py-3">
+          <span className="kr flex-1 text-[13px] text-muted">이 자료에서 인용을 골라 카드에 연결해요</span>
+          <Btn
+            variant="ink"
+            onClick={() => {
+              useUi.getState().setReview({ sourceId: source.id, step: "pick-target", targetId: null, pickedLine: null, backTo: "candidates" });
+              useUi.getState().openPanel("review");
+            }}
+          >
+            카드에 연결하기
+          </Btn>
+        </div>
+      )}
     </SidePanel>
   );
 }

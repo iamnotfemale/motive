@@ -29,7 +29,6 @@ import { cn } from "@/lib/utils";
 const STEP_INDEX: Record<ReviewStep, number> = {
   reading: 2,
   "pick-target": 2,
-  consent: 3,
   analyzing: 4,
   candidates: 5,
   source: 5,
@@ -49,22 +48,11 @@ export function ReviewPanel({ pid }: { pid: string }) {
   const candidates = (doc?.candidates ?? []).filter((c) => c.sourceId === review?.sourceId);
   const target = review?.targetId && doc ? findNode(doc, review.targetId) : undefined;
 
-  // 자료를 아직 읽는 중이면 읽기가 끝나는 순간 다음 단계로 넘어간다.
-  useEffect(() => {
-    if (!review || !source) return;
-    if (review.step !== "reading") return;
-    if (source.state === "read") useUi.getState().patchReview({ step: review.targetId ? "consent" : "pick-target" });
-    if (source.state === "no-text" || source.state === "failed")
-      useUi.getState().patchReview({
-        step: "attached",
-        notice: { text: "이 자료에서 읽을 텍스트를 찾지 못했어요." },
-      });
-  }, [review, source]);
 
-  const analyze = useCallback(async () => {
+  const analyze = useCallback(async (targetId: string | null = review?.targetId ?? null) => {
     if (!doc || !review || !source) return;
     setBusy(true);
-    useUi.getState().patchReview({ step: "analyzing" });
+    useUi.getState().patchReview({ step: "analyzing", targetId });
     const res = await proposeEvidence(source.id, source.text, doc.nodes);
     setBusy(false);
 
@@ -82,13 +70,28 @@ export function ReviewPanel({ pid }: { pid: string }) {
     }
 
     // 대상이 지정돼 있으면 그 카드에 붙는 후보만 남긴다.
-    const list = review.targetId ? res.data.filter((c) => c.targetId === review.targetId) : res.data;
+    const list = targetId ? res.data.filter((c) => c.targetId === targetId) : res.data;
     store().setCandidates(pid, [
       ...(doc.candidates ?? []).filter((c) => c.sourceId !== source.id),
       ...list,
     ]);
     useUi.getState().patchReview({ step: "candidates" });
   }, [doc, review, source, pid, store]);
+
+  // 자료를 아직 읽는 중이면 읽기가 끝나는 순간 다음 단계로 넘어간다.
+  useEffect(() => {
+    if (!review || !source) return;
+    if (review.step !== "reading") return;
+    if (source.state === "read") {
+      if (review.targetId) void analyze(review.targetId);
+      else useUi.getState().patchReview({ step: "pick-target" });
+    }
+    if (source.state === "no-text" || source.state === "failed")
+      useUi.getState().patchReview({
+        step: "attached",
+        notice: { text: "이 자료에서 읽을 텍스트를 찾지 못했어요." },
+      });
+  }, [review, source, analyze]);
 
   if (!doc || !review || !source) return null;
 
@@ -176,7 +179,7 @@ export function ReviewPanel({ pid }: { pid: string }) {
                     key={n.id}
                     type="button"
                     aria-label={`${KIND[kindOf(n)].ko} ${n.id} ${nodeTitle(n)}`}
-                    onClick={() => useUi.getState().patchReview({ targetId: n.id, step: "consent" })}
+                    onClick={() => void analyze(n.id)}
                     className="flex h-10 items-center gap-2 rounded-[6px] border border-line bg-surface px-3 text-left text-[14px] hover:border-brand hover:bg-wash"
                   >
                     <Mono>{n.id}</Mono>
@@ -193,32 +196,6 @@ export function ReviewPanel({ pid }: { pid: string }) {
             >
               원문부터 보기
             </Btn>
-          </div>
-        )}
-
-        {review.step === "consent" && (
-          <div className="flex flex-col gap-3 rounded-[8px] border border-line p-4 animate-fade-up">
-            <div className="font-semibold">근거 후보를 찾을까요?</div>
-            <p className="text-[14px] leading-5 text-muted">
-              원문이 외부 AI로 전송돼요. 첨부만 유지하면 나중에 원문에서 직접 고를 수 있어요.
-            </p>
-            {target && (
-              <div className="flex items-center gap-2 rounded-[6px] bg-wash px-3 py-2 text-[14px]">
-                <Mono>{target.id}</Mono>
-                <span className="min-w-0 flex-1 truncate">{nodeTitle(target)}</span>
-              </div>
-            )}
-            {ui.aiOff && (
-              <p className="text-[13px] leading-[19px] text-warn">
-                AI가 연결되지 않아 후보 찾기를 사용할 수 없어요.
-              </p>
-            )}
-            <div className="flex justify-end gap-2">
-              <Btn onClick={() => useUi.getState().patchReview({ step: "attached" })}>첨부만 유지</Btn>
-              <Btn variant="ink" onClick={() => void analyze()} disabled={ui.aiOff || busy}>
-                동의하고 후보 찾기
-              </Btn>
-            </div>
           </div>
         )}
 
