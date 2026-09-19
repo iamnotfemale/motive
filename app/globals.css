@@ -112,6 +112,8 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+@keyframes blink { 0%, 50% { opacity: 1 } 50.01%, 100% { opacity: 0 } }
+
 /* 체험 안내가 가리키는 곳 — 파란 테두리가 숨 쉬듯 깜빡인다 */
 .hint-pulse {
   outline: 2px solid var(--color-brand);
