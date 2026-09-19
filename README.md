@@ -2,19 +2,16 @@
   <img src="public/logo.png" width="72" alt="Motive" />
 </p>
 
-<h1 align="center">Motive</h1>
+<h1 align="center">Motive Your Idea!</h1>
 
 <p align="center">
-  <b>Motive Your Idea.</b><br/>
+  <b>Motive</b><br/>
   아이디어는 처음부터 정리되어 있지 않습니다.<br/>
   문제 · 가설 · 근거 · 결정을 한 캔버스에 두고, <i>왜 생각이 바뀌었는지</i>까지 코딩 에이전트에게 넘기는 워크스페이스.
 </p>
 
 <p align="center">
   <a href="https://motive-it.vercel.app"><img src="https://img.shields.io/badge/Live-motive--it.vercel.app-18181b?style=for-the-badge&logo=vercel&logoColor=white" alt="Live" /></a>
-  <a href="https://motive-it.vercel.app/dashboard"><img src="https://img.shields.io/badge/3%EB%B6%84_%EB%8D%B0%EB%AA%A8_%EC%B2%B4%ED%97%98-2563eb?style=for-the-badge" alt="Demo" /></a>
-  <img src="https://img.shields.io/badge/Next.js_16-000?style=for-the-badge&logo=nextdotjs" alt="Next.js" />
-  <img src="https://img.shields.io/badge/No_signup-%C2%B7_%EB%B8%8C%EB%9D%BC%EC%9A%B0%EC%A0%80_%EC%A0%80%EC%9E%A5-71717a?style=for-the-badge" alt="No signup" />
 </p>
 
 <p align="center">
@@ -127,14 +124,6 @@ docs/                    제품 스펙 · 디자인 핸드오프 · 토큰
 **스택** — Next.js 16 · React 19 · TypeScript · Tailwind v4 · zustand · Radix/shadcn · motion · Vercel AI SDK + OpenRouter · pdf.js
 
 ---
-
-## 원칙
-
-1. **AI는 제안만 한다.** 근거 · 관계 · 결정을 자동으로 확정하지 않는다.
-2. **상태를 꾸미지 않는다.** 미검증은 미검증으로, 열린 질문은 열린 채로 내보낸다.
-3. **버린 길도 남긴다.** 기각한 대안과 이유가 있어야 에이전트가 같은 제안을 다시 하지 않는다.
-4. **출처는 줄 번호까지.** 모든 근거가 원문에 닿아야 한다.
-5. **가입 없이, 브라우저에.** 문제를 적는 순간부터 인계까지 한 곳에서.
 
 ---
 
