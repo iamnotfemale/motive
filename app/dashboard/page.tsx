@@ -281,13 +281,26 @@ function DashboardInner() {
                       </button>
                     ))}
                   </div>
-                  <Btn size="lg" onClick={() => router.push(`/think/${createTutorialProject()}`)} className="gap-1.5" title="실제 프로젝트가 어떻게 발전하는지 3분 안에 체험해 보세요">
-                    3분 데모 체험하기 <ChevronRight className="size-3.5" />
-                  </Btn>
                   <Btn variant="ink" size="lg" onClick={() => { setNewOpen(true); setNewErr(false); }} className="gap-1.5">
                     <Plus className="size-4" />새 캔버스
                   </Btn>
                 </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-4 rounded-[10px] border border-line bg-surface px-5 py-4">
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                  <div className="text-[16px] font-semibold">처음이라면 3분 데모부터</div>
+                  <p className="kr text-[14px] leading-5 text-muted">
+                    한 팀의 리서치 자료로 근거를 뽑고, 가설을 반박하고, 문제를 다시 정의하고, 결정까지 인계 문서로 남기는 과정을 따라가 봅니다.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => router.push(`/think/${createTutorialProject()}`)}
+                  className="hint-pulse inline-flex h-12 items-center gap-2 rounded-[8px] bg-ink px-6 text-[16px] font-medium text-white transition-[background] duration-[120ms] hover:bg-ink-hover"
+                >
+                  3분 데모 체험하기 <ChevronRight className="size-4" />
+                </button>
               </div>
 
               {newOpen && (

@@ -808,7 +808,7 @@ export function Canvas({
             {(
               [
                 ["claim", "가설 추가"],
-                ["source", "자료로 근거 찾기"],
+                ["source", "자료에서 근거 뽑기"],
                 ["question", "검토 질문 추가"],
               ] as const
             ).map(([what, label]) => (

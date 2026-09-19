@@ -213,7 +213,7 @@ export function SourcePanel({ pid }: { pid: string }) {
 
       {usable && (
         <div className="flex items-center gap-2 border-t border-line px-5 py-3">
-          <span className="kr flex-1 text-[13px] text-muted">이 자료에서 인용을 골라 카드에 연결해요</span>
+          <span className="kr flex-1 text-[13px] text-muted">원문 문장을 골라 카드의 근거로 붙여요</span>
           <Btn
             variant="ink"
             className={hint === source.id ? "hint-pulse" : undefined}
@@ -222,7 +222,7 @@ export function SourcePanel({ pid }: { pid: string }) {
               useUi.getState().openPanel("review");
             }}
           >
-            카드에 연결하기
+            근거 뽑기
           </Btn>
         </div>
       )}

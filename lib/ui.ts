@@ -28,17 +28,8 @@ export interface Connecting {
 export type InspectorTab = "content" | "links" | "sources";
 export type EditMode = "write" | "md";
 
-/** 자료 검토 8단계. 화면 상단 스텝 인디케이터와 1:1. */
-export const REVIEW_STEPS = [
-  "끌어오기",
-  "드롭 영역",
-  "파일 저장·읽기",
-  "AI 전송 동의",
-  "후보 표시",
-  "원문·해석 검토",
-  "선택 승인",
-  "실선 관계",
-] as const;
+/** 자료에서 근거 뽑기 3단계. 패널 상단 표시와 1:1. */
+export const REVIEW_STEPS = ["자료", "붙일 카드", "인용 고르기"] as const;
 
 export type ReviewStep =
   | "reading"

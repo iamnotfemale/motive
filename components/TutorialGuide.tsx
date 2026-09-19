@@ -24,7 +24,7 @@ import { useUi } from "@/lib/ui";
 import { cn } from "@/lib/utils";
 
 const ORDER: { key: TutorialStep | "look"; ko: string }[] = [
-  { key: "evidence", ko: "인터뷰에서 근거 찾기" },
+  { key: "evidence", ko: "인터뷰에서 근거 뽑기" },
   { key: "more", ko: "다른 자료로 가설 반박하기" },
   { key: "revisit", ko: "문제 다시 정의하기" },
   { key: "look", ko: "잠깐, 다르게 보기" },
@@ -147,11 +147,11 @@ export function TutorialGuide({ pid }: { pid: string }) {
             {step === "evidence" && (
               <>
                 <p className="kr text-[13px] leading-5 text-muted">
-                  파란 테두리가 깜빡이는 곳을 누르면 됩니다. ① 오른쪽 자료 패널 아래 <b>카드에 연결하기</b> ② 대상 목록에서 <b>H-01 가설</b> ③ 후보 중 <b>근거로 추가</b>. 승인한 인용이 근거 카드가 되어 가설에 연결됩니다.
+                  파란 테두리가 깜빡이는 곳을 누르면 됩니다. ①  오른쪽 자료 패널 아래 <b>근거 뽑기</b> ② 대상 목록에서 <b>H-01 가설</b> ③ 후보 중 <b>이 카드의 근거로 추가</b>. 승인한 인용이 근거 카드가 되어 가설에 연결됩니다.
                 </p>
                 <div className="flex gap-2">
                   <Btn className="flex-1" onClick={() => openSource(TUTORIAL_SOURCES[0].id)}>인터뷰 보기</Btn>
-                  <Btn variant="ink" className="flex-1" onClick={() => findEvidence(TUTORIAL_SOURCES[0].id)}>근거 찾기</Btn>
+                  <Btn variant="ink" className="flex-1" onClick={() => findEvidence(TUTORIAL_SOURCES[0].id)}>근거 뽑기</Btn>
                 </div>
               </>
             )}
@@ -165,7 +165,7 @@ export function TutorialGuide({ pid }: { pid: string }) {
                   <Btn className="flex-1" onClick={() => openSource("tut-survey")}>설문 결과 보기</Btn>
                 </div>
                 {picked && (
-                  <Btn variant="ink" onClick={() => findEvidence(picked.id)}>{picked.name} 에서 근거 찾기</Btn>
+                  <Btn variant="ink" onClick={() => findEvidence(picked.id)}>{picked.name} 에서 근거 뽑기</Btn>
                 )}
                 <p className="kr text-[12px] leading-4 text-faint">근거는 저장되는 것보다 무엇을 바꾸는지가 중요합니다.</p>
               </>

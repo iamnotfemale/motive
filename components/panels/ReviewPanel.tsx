@@ -27,12 +27,12 @@ import { cn } from "@/lib/utils";
 
 /** 패널 상단 스텝 인디케이터에서 지금 어디인지 표시할 단계 번호. */
 const STEP_INDEX: Record<ReviewStep, number> = {
-  reading: 2,
+  reading: 1,
   "pick-target": 2,
-  analyzing: 4,
-  candidates: 5,
-  source: 5,
   attached: 2,
+  analyzing: 3,
+  candidates: 3,
+  source: 3,
 };
 
 export function ReviewPanel({ pid }: { pid: string }) {
@@ -102,7 +102,7 @@ export function ReviewPanel({ pid }: { pid: string }) {
     <SidePanel width={440} testId="review">
       <div className="flex flex-col gap-3 border-b border-line px-5 pt-4 pb-3">
         <div className="flex items-center gap-2">
-          <span className="font-semibold">자료 검토</span>
+          <span className="font-semibold">자료에서 근거 뽑기</span>
           <span
             className="max-w-[180px] truncate font-mono text-[13px] text-muted"
             title={source.name}
@@ -167,9 +167,9 @@ export function ReviewPanel({ pid }: { pid: string }) {
 
         {review.step === "pick-target" && (
           <div className="flex flex-col gap-2.5 rounded-[8px] border border-line p-4">
-            <div className="font-semibold">자료함에 추가했어요</div>
-            <p className="text-[14px] leading-5 text-muted">
-              연결 대상을 고르세요. 나중에 골라도 자료는 그대로 남아요.
+            <div className="font-semibold">이 자료를 어느 카드의 근거로 쓸까요?</div>
+            <p className="kr text-[14px] leading-5 text-muted">
+              카드를 고르면 원문에서 그 카드와 관련된 문장을 찾아 후보로 보여줘요. 후보 중 고른 것만 근거 카드가 되어 선으로 이어집니다.
             </p>
             <div className="flex flex-col gap-1">
               {doc.nodes
@@ -197,30 +197,28 @@ export function ReviewPanel({ pid }: { pid: string }) {
               className="self-start"
               onClick={() => useUi.getState().patchReview({ step: "source", backTo: "pick-target" })}
             >
-              원문부터 보기
+              원문 먼저 읽기
             </Btn>
           </div>
         )}
 
         {review.step === "analyzing" && (
           <div className="flex flex-col gap-2.5 rounded-[8px] border border-line p-4">
-            <div className="text-[14px] font-medium">근거 후보를 찾는 중</div>
+            <div className="text-[14px] font-medium">원문에서 관련 문장을 찾는 중</div>
             <Indeterminate />
-            <p className="text-[13px] text-muted">
-              찾은 인용은 원문과 한 번 더 대조해요. 대조에 실패하면 승인할 수 없게 표시돼요.
-            </p>
+            <p className="kr text-[13px] text-muted">찾은 문장은 원문과 한 번 더 대조해요. 원문에 없는 문장은 추가할 수 없어요.</p>
           </div>
         )}
 
         {review.step === "attached" && (
           <div className="flex flex-col gap-2.5 rounded-[8px] border border-line p-4">
-            <p className="text-[14px] leading-5">첨부만 유지했어요. 원문에서 직접 근거를 고를 수 있어요.</p>
+            <p className="kr text-[14px] leading-5">이 자료에서 읽을 텍스트가 없어요. 원문을 열어 직접 고르거나, 자료 패널에서 텍스트를 붙여넣어 주세요.</p>
             <div className="flex gap-2">
               <Btn onClick={() => useUi.getState().patchReview({ step: "source", backTo: "attached" })}>
                 원문 열기
               </Btn>
               <Btn variant="ghost" onClick={() => void analyze()} disabled={ui.aiOff || busy}>
-                나중에 후보 찾기
+                다시 시도
               </Btn>
             </div>
           </div>
@@ -231,7 +229,7 @@ export function ReviewPanel({ pid }: { pid: string }) {
             {candidates.length === 0 && (
               <div className="flex flex-col items-start gap-2.5 rounded-[8px] border border-dashed border-line p-4">
                 <p className="text-[14px] leading-5">
-                  관련 근거를 찾지 못했어요. 원문에서 직접 선택할 수 있어요.
+                  이 카드와 관련된 문장을 찾지 못했어요. 원문에서 직접 골라 근거로 만들 수 있어요.
                 </p>
                 <Btn onClick={() => useUi.getState().patchReview({ step: "source", backTo: "candidates" })}>
                   원문에서 직접 선택
@@ -358,7 +356,7 @@ export function ReviewPanel({ pid }: { pid: string }) {
                           toast(`${newId} 근거로 추가했어요`, { description: `${rel} 관계를 만들었어요` });
                         }}
                       >
-                        근거로 추가
+                        이 카드의 근거로 추가
                       </Btn>
                     </div>
                   )}

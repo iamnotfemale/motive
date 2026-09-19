@@ -98,7 +98,7 @@ export function ActionDock(p: DockProps) {
             <DropdownMenuShortcut>H</DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => fileRef.current?.click()}>
-            자료로 근거 찾기
+            자료에서 근거 뽑기
             <DropdownMenuShortcut>E</DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => p.onAdd("question")}>

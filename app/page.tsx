@@ -300,7 +300,7 @@ function HeroChrome() {
         <span className="h-8 px-2.5 leading-8 font-medium text-ink">정리</span>
         <span className="mx-1 h-5 w-px bg-line" />
         <span className="h-8 px-2 leading-8 font-medium text-ink">자료</span>
-        <span className="h-8 px-2 leading-8 font-medium text-ink">근거 찾기</span>
+        <span className="h-8 px-2 leading-8 font-medium text-ink">근거 뽑기</span>
         <span className="mx-1 h-5 w-px bg-line" />
         <span className="w-7 text-center text-[16px]">−</span>
         <span className="min-w-12 text-center font-mono text-ink">100%</span>

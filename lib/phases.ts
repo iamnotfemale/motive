@@ -42,7 +42,7 @@ const A: Record<ActionKey, ActionDef> = {
   attach: { key: "attach", ko: "자료", icon: "Paperclip" },
   url: { key: "url", ko: "주소 읽기", icon: "Link2" },
   sources: { key: "sources", ko: "자료함", icon: "FolderOpen" },
-  "find-evidence": { key: "find-evidence", ko: "근거 찾기", icon: "Quote" },
+  "find-evidence": { key: "find-evidence", ko: "근거 뽑기", icon: "Quote" },
   conflicts: { key: "conflicts", ko: "반박", icon: "TriangleAlert" },
   issues: { key: "issues", ko: "미확인", icon: "ListChecks" },
   "check-quotes": { key: "check-quotes", ko: "인용 확인", icon: "BookOpenCheck" },
