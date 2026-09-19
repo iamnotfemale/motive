@@ -495,6 +495,8 @@ export default function Workspace({ params }: { params: Promise<{ id: string }> 
             if (!store().redoStep(pid)) toast("다시 실행할 변경이 없어요");
           }}
           onTidy={() => useUi.getState().requestTidy()}
+          showEdges={ui.showEdges}
+          onToggleEdges={() => useUi.getState().setShowEdges(!ui.showEdges)}
           onZoom={(z) => useUi.getState().requestZoom(z)}
           hasSelection={ui.sel.length > 0}
           onFit={() => useUi.getState().requestFit()}

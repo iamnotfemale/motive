@@ -33,9 +33,19 @@ const spots = tidyLayout(nodes, edges, [{ ...DEMO_SOURCE, attachedTo: "E-01" }],
 for (const n of nodes) assert.ok(spots[n.id], `${n.id} 자리가 없다`);
 // 자료도 함께
 assert.ok(spots[DEMO_SOURCE.id], "자료 자리가 없다");
-// 붙어 있는 자료는 그 카드 바로 아래, 같은 열
-assert.equal(spots[DEMO_SOURCE.id].x, spots["E-01"].x, "붙은 자료가 다른 열에 놓였다");
-assert.ok(spots[DEMO_SOURCE.id].y > spots["E-01"].y, "붙은 자료가 카드 위에 놓였다");
+// 붙어 있는 자료는 그 카드 오른쪽, 같은 줄
+assert.equal(spots[DEMO_SOURCE.id].y, spots["E-01"].y, "붙은 자료가 다른 줄에 놓였다");
+assert.ok(spots[DEMO_SOURCE.id].x > spots["E-01"].x + 288, "붙은 자료가 카드와 겹친다");
+// 같은 줄의 카드(자료 자리 포함)는 서로 겹치지 않는다
+{
+  const ids = [...nodes.map((n) => n.id), DEMO_SOURCE.id];
+  for (const a of ids) for (const b of ids) {
+    if (a >= b) continue;
+    const A = spots[a], B = spots[b];
+    const overlap = Math.abs(A.x - B.x) < 288 && Math.abs(A.y - B.y) < 200;
+    assert.ok(!overlap, `${a} 와 ${b} 가 겹친다`);
+  }
+}
 
 // 같은 층은 같은 y, 다른 x
 const byLevel = new Map<number, string[]>();

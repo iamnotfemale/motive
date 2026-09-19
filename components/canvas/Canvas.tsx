@@ -614,7 +614,7 @@ export function Canvas({
         }}
         className={cn("absolute top-0 left-0", hand && "pointer-events-none")}
       >
-        <EdgeLayer
+        {ui.showEdges && <EdgeLayer
           geoms={geoms}
           selectedId={ui.selEdge}
           selectedIds={ui.selEdges}
@@ -625,11 +625,11 @@ export function Canvas({
             const e = id ? doc.edges.find((x) => x.id === id) : null;
             useUi.getState().setFocusView(e ? e.to : null);
           }}
-        />
+        />}
 
         {connecting && rects[connecting.from] && (
           <svg className="pointer-events-none absolute top-0 left-0 overflow-visible" width={1} height={1}>
-            {doc.sources.map((s) => {
+            {ui.showEdges && doc.sources.map((s) => {
               const a = s.attachedTo ? rects[s.attachedTo] : undefined;
               const b = rects[s.id];
               if (!a || !b) return null;

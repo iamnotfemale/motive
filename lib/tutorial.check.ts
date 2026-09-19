@@ -18,7 +18,7 @@ for (const s of TUTORIAL_SOURCES) {
 
 // 반대 근거 2건 승인 → 문제 재정의 단계
 const S = useDoc.getState();
-for (const sid of ["tut-interview", "tut-competitor"]) {
+for (const sid of ["tut-interview"]) {
   const c = tutorialCandidates(sid, D())!.find((x) => x.targetId === "H-01")!;
   S.setCandidates(pid, [...D().candidates, c]);
   assert.ok(S.approveCandidate(pid, c.id));

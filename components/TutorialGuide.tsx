@@ -23,10 +23,11 @@ import {
 import { useUi } from "@/lib/ui";
 import { cn } from "@/lib/utils";
 
-const ORDER: { key: TutorialStep; ko: string }[] = [
+const ORDER: { key: TutorialStep | "look"; ko: string }[] = [
   { key: "evidence", ko: "인터뷰에서 근거 찾기" },
   { key: "more", ko: "다른 자료로 가설 반박하기" },
   { key: "revisit", ko: "문제 다시 정의하기" },
+  { key: "look", ko: "잠깐, 다르게 보기" },
   { key: "decide", ko: "결정 남기기" },
   { key: "handoff", ko: "인계 문서 만들기" },
 ];
@@ -37,9 +38,16 @@ export function TutorialGuide({ pid }: { pid: string }) {
   const [hidden, setHidden] = useState(false);
   const [welcome, setWelcome] = useState(true);
   const [draft, setDraft] = useState<string | null>(null);
+  // 둘러보기는 문서로 알 수 없는 체험이라 이 카드가 기억한다. 세 가지 다 해 보면 넘어간다.
+  const [tried, setTried] = useState<Record<string, boolean>>({});
+  const [skipLook, setSkipLook] = useState(false);
+  const showEdges = useUi((s) => s.showEdges);
   if (!doc) return null;
 
-  const { step, counter } = tutorialStep(doc);
+  const derived = tutorialStep(doc);
+  const lookDone = skipLook || ["edges", "focus", "wide"].every((k) => tried[k]);
+  const step: TutorialStep | "look" = derived.step === "decide" && !lookDone ? "look" : derived.step;
+  const counter = derived.counter;
   const idx = ORDER.findIndex((o) => o.key === step);
   const done = step === "done";
 
@@ -132,7 +140,7 @@ export function TutorialGuide({ pid }: { pid: string }) {
             {step === "more" && (
               <>
                 <p className="kr text-[13px] leading-5 text-muted">
-                  가설 H-01에 반대 근거 {counter}건. 하나로 가설을 뒤집기엔 부족해요. 다른 자료도 확인해 볼까요?
+                  근거가 생겼어요. 이제 가설 <b>H-01</b>에 <b>반대 근거</b>로 연결된 것이 하나는 있어야 문제를 다시 볼 수 있어요. 인터뷰에서 “사람 구하는 건 별로 안 어려웠어요”를 H-01에 반대 근거로 승인하거나, 다른 자료에서 찾아보세요.
                 </p>
                 <div className="flex gap-2">
                   <Btn className="flex-1" onClick={() => openSource("tut-competitor")}>경쟁 조사 보기</Btn>
@@ -163,6 +171,53 @@ export function TutorialGuide({ pid }: { pid: string }) {
                   }}
                 >
                   이 문장으로 P-02 만들기
+                </Btn>
+              </>
+            )}
+            {step === "look" && (
+              <>
+                <p className="kr text-[13px] leading-5 text-muted">문제가 바뀌었어요. 결정하기 전에 캔버스를 다르게 보는 세 가지를 잠깐 써 보세요.</p>
+                <div className="flex flex-col gap-1.5">
+                  <Btn
+                    className="justify-between"
+                    onClick={() => {
+                      useUi.getState().setShowEdges(!showEdges);
+                      setTried((t) => ({ ...t, edges: true }));
+                    }}
+                  >
+                    <span>{showEdges ? "관계선 숨기고 카드만 보기" : "관계선 다시 보이기"}</span>
+                    {tried.edges && <Check className="size-3.5 text-ok" />}
+                  </Btn>
+                  <Btn
+                    className="justify-between"
+                    onClick={() => {
+                      const id = doc.nodes.some((n) => n.id === "H-01") ? "H-01" : doc.nodes[0]?.id;
+                      if (!id) return;
+                      const on = useUi.getState().focusView === id;
+                      useUi.getState().select([id]);
+                      useUi.getState().setFocusView(on ? null : id);
+                      setTried((t) => ({ ...t, focus: true }));
+                    }}
+                  >
+                    <span>가설 H-01 주변만 보기</span>
+                    {tried.focus && <Check className="size-3.5 text-ok" />}
+                  </Btn>
+                  <Btn
+                    className="justify-between"
+                    onClick={() => {
+                      const id = doc.nodes.find((n) => n.type === "problem" && n.id !== "P-01")?.id ?? "P-01";
+                      useUi.getState().select([id]);
+                      useUi.getState().setWide(true);
+                      setTried((t) => ({ ...t, wide: true }));
+                    }}
+                  >
+                    <span>새 문제 P-02 넓게 보기</span>
+                    {tried.wide && <Check className="size-3.5 text-ok" />}
+                  </Btn>
+                </div>
+                <p className="kr text-[12px] leading-4 text-faint">아래 도구 막대에서도 언제든 켜고 끌 수 있어요. 카드를 고르면 위쪽 막대에 “주변만 보기”가 있습니다.</p>
+                <Btn variant="ghost" size="sm" onClick={() => { setSkipLook(true); useUi.getState().setShowEdges(true); useUi.getState().setFocusView(null); }}>
+                  {lookDone ? "다음" : "건너뛰고 결정으로"}
                 </Btn>
               </>
             )}

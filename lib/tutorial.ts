@@ -319,7 +319,7 @@ export function tutorialStep(doc: Doc): { step: TutorialStep; counter: number } 
   const revised = doc.nodes.some((n) => n.type === "problem" && n.id !== "P-01");
   const decided = doc.nodes.some((n) => n.type === "decision");
   if (evidence.length === 0) return { step: "evidence", counter };
-  if (counter < 2) return { step: "more", counter };
+  if (counter < 1) return { step: "more", counter };
   if (!revised) return { step: "revisit", counter };
   if (!decided) return { step: "decide", counter };
   if (doc.genAt === 0) return { step: "handoff", counter };

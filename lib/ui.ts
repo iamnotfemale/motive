@@ -89,6 +89,8 @@ interface UiState {
   search: string;
   connecting: Connecting | null;
   grid: boolean;
+  /** 관계선 표시. 숨기면 카드만 남아 배치를 생각하기 쉽다. */
+  showEdges: boolean;
   /** 전체 화면 편집기. 노션처럼 본문만 크게 본다. */
   wide: boolean;
   /** 새 카드를 화면 가운데로 부드럽게 옮겨달라는 요청. */
@@ -127,6 +129,7 @@ interface UiState {
   setSearch: (q: string) => void;
   setConnecting: (c: Connecting | null) => void;
   setGrid: (v: boolean) => void;
+  setShowEdges: (v: boolean) => void;
   setWide: (v: boolean) => void;
   requestCenter: (id: string) => void;
   requestFit: () => void;
@@ -162,6 +165,7 @@ const initial = {
   search: "",
   connecting: null as Connecting | null,
   grid: true,
+  showEdges: true,
   wide: false,
   center: null as { id: string; nonce: number } | null,
   fit: null as number | null,
@@ -203,6 +207,7 @@ export const useUi = create<UiState>()((set, get) => ({
   setSearch: (search) => set({ search }),
   setConnecting: (connecting) => set({ connecting }),
   setGrid: (grid) => set({ grid }),
+  setShowEdges: (showEdges) => set({ showEdges }),
   setWide: (wide) => set({ wide }),
   requestCenter: (id) => set({ center: { id, nonce: Date.now() } }),
   requestFit: () => set({ fit: Date.now() }),

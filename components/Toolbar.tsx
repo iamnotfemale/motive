@@ -6,7 +6,7 @@
  * 왼쪽부터 도구(선택·손·격자·블록 추가) → 되돌리기 → 정리 → 단계별 핵심 행동 → 확대·축소.
  * 단계별 행동만 `정의 / 탐색 / 검토 / 결정 / 인계` 에 따라 바뀐다 (lib/phases.ts).
  */
-import { Hand, Maximize2, MousePointer2, Paperclip, Plus, Redo2, Sparkles, Undo2 } from "lucide-react";
+import { EyeOff, Hand, Maximize2, MousePointer2, Paperclip, Plus, Redo2, Sparkles, Spline, Undo2 } from "lucide-react";
 import { Btn } from "@/components/kit";
 import { Icon } from "@/components/icon";
 import {
@@ -34,6 +34,8 @@ interface Props {
   onUndo: () => void;
   onRedo: () => void;
   onTidy: () => void;
+  showEdges: boolean;
+  onToggleEdges: () => void;
   onZoom: (z: number) => void;
   /** 고른 카드가 있으면 그 카드에 맞춰 확대한다. */
   onFit: () => void;
@@ -160,6 +162,23 @@ export function Toolbar(p: Props) {
         <Sparkles className="size-4 text-muted" />
         정리
       </Btn>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            aria-label={p.showEdges ? "관계선 숨기기" : "관계선 보이기"}
+            aria-pressed={!p.showEdges}
+            onClick={() => p.onToggleEdges()}
+            className={cn(
+              "flex size-8 items-center justify-center rounded-[6px] text-muted transition-colors duration-[120ms] hover:bg-wash hover:text-ink",
+              !p.showEdges && "bg-[#eff6ff] text-brand",
+            )}
+          >
+            {p.showEdges ? <Spline className="size-[18px]" /> : <EyeOff className="size-[18px]" />}
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top">{p.showEdges ? "관계선 숨기기" : "관계선 보이기"}</TooltipContent>
+      </Tooltip>
 
       <Sep />
 

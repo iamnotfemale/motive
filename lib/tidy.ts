@@ -65,8 +65,8 @@ export function levelsOf(
 }
 
 /**
- * 층마다 한 줄씩, 줄 안에서는 부모 가까이 오도록 늘어놓는다.
- * 자료는 붙어 있는 카드 바로 아래에, 붙지 않은 자료는 맨 아랫줄에 모은다.
+ * 층마다 한 줄씩. 자식은 부모 바로 아래에 모이고(같은 가설의 근거들이 이웃), 줄 안에서는 겹치지 않게 오른쪽으로 민다.
+ * 붙은 자료는 카드 오른쪽 자리를 같이 차지하고, 붙지 않은 자료는 맨 아랫줄에 모은다.
  */
 export function tidyLayout(
   nodes: ReasoningNode[],
@@ -86,27 +86,7 @@ export function tidyLayout(
     rows.set(l, [...(rows.get(l) ?? []), n]);
   }
 
-  // 줄 안의 순서: 부모가 놓인 자리를 따라간다. 부모가 없으면 만든 순서.
-  const order = new Map<string, number>();
   const sortedLevels = [...rows.keys()].sort((a, b) => a - b);
-  for (const l of sortedLevels) {
-    const row = rows.get(l)!;
-    row.sort((a, b) => {
-      const pa = parentIndex(a.id);
-      const pb = parentIndex(b.id);
-      if (pa !== pb) return pa - pb;
-      return a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id);
-    });
-    row.forEach((n, i) => order.set(n.id, i));
-  }
-
-  function parentIndex(id: string) {
-    for (const e of edges) {
-      const h = hierarchy(e, kindOfId);
-      if (h?.child === id && order.has(h.parent)) return order.get(h.parent)!;
-    }
-    return Number.MAX_SAFE_INTEGER;
-  }
 
   const sizeOf = (id: string): Size => sizes[id] ?? { w: 288, h: 160 };
   const out: Record<string, Spot> = {};
@@ -116,25 +96,52 @@ export function tidyLayout(
     attached.set(s.attachedTo, [...(attached.get(s.attachedTo) ?? []), s]);
   }
 
+  // 카드가 차지하는 폭·높이. 붙은 자료는 카드 오른쪽에 세워지므로 그 자리를 같이 잡는다.
+  const footprint = (id: string): Size => {
+    const size = sizeOf(id);
+    const chips = attached.get(id) ?? [];
+    if (!chips.length) return size;
+    const stack = chips.reduce((a, c) => a + sizeOf(c.id).h + 10, -10);
+    return { w: size.w + 28 + Math.max(...chips.map((c) => sizeOf(c.id).w)), h: Math.max(size.h, stack) };
+  };
+
+  /** 첫 부모의 가로 중심. 자식을 그 아래에 모아 선이 짧고 덜 꼬이게 한다. */
+  const parentCenter = (id: string): number | null => {
+    for (const e of edges) {
+      const h = hierarchy(e, kindOfId);
+      if (h?.child === id && out[h.parent]) return out[h.parent].x + sizeOf(h.parent).w / 2;
+    }
+    return null;
+  };
+
   let y = ORIGIN.y;
   for (const l of sortedLevels) {
     const row = rows.get(l)!;
-    let x = ORIGIN.x;
+    // 줄 안 순서: 부모 중심 x 순 — 같은 부모의 자식(예: 한 가설의 근거들)이 이웃하고 선이 교차하지 않는다.
+    const want = new Map(row.map((n) => [n.id, parentCenter(n.id)]));
+    row.sort((a, b) => {
+      const wa = want.get(a.id);
+      const wb = want.get(b.id);
+      if (wa != null && wb != null && wa !== wb) return wa - wb;
+      if ((wa == null) !== (wb == null)) return wa == null ? 1 : -1;
+      return a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id);
+    });
+
+    let cursor = ORIGIN.x;
     let tallest = 0;
-
     for (const n of row) {
-      const size = sizeOf(n.id);
+      const fp = footprint(n.id);
+      const w = want.get(n.id);
+      // 부모 바로 아래를 원하되, 왼쪽 이웃과는 겹치지 않는다
+      const x = Math.max(cursor, w != null ? w - sizeOf(n.id).w / 2 : cursor);
       out[n.id] = { x: Math.round(x), y: Math.round(y) };
-
-      // 이 카드에 붙은 자료는 바로 아래에 줄 세운다
-      let belowY = y + size.h + 16;
-      for (const s of attached.get(n.id) ?? []) {
-        out[s.id] = { x: Math.round(x), y: Math.round(belowY) };
-        belowY += sizeOf(s.id).h + 12;
+      let cy = y;
+      for (const c of attached.get(n.id) ?? []) {
+        out[c.id] = { x: Math.round(x + sizeOf(n.id).w + 28), y: Math.round(cy) };
+        cy += sizeOf(c.id).h + 10;
       }
-
-      tallest = Math.max(tallest, belowY - y);
-      x += size.w + COL_GAP;
+      tallest = Math.max(tallest, fp.h);
+      cursor = x + fp.w + COL_GAP;
     }
     y += tallest + ROW_GAP;
   }
